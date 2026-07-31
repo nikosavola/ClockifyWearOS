@@ -1,0 +1,32 @@
+# Detekt configuration.
+#
+# `allRules = true` is set in the root build.gradle.kts (the Kotlin analog of enabling clippy's
+# pedantic/nursery groups). This file re-disables only rules that genuinely conflict with a
+# deliberate choice in this project; everything else detekt offers is left on. Each entry below was
+# added because running detekt on this codebase actually flagged it - not preemptively.
+comments:
+  active: true
+  # Public API is documented where it aids understanding, not exhaustively; don't require KDoc on
+  # every public declaration (e.g. UserDto's fields, MainActivity, ClockifyTheme).
+  UndocumentedPublicClass:
+    active: false
+  UndocumentedPublicFunction:
+    active: false
+  UndocumentedPublicProperty:
+    active: false
+naming:
+  active: true
+  # Composables (e.g. ClockifyTheme) are PascalCase, so allow an uppercase first letter.
+  FunctionNaming:
+    active: true
+    functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
+  # Backtick-quoted, sentence-style JUnit test names (e.g. `decodes known fields and tolerates
+  # unknown ones`) are the convention here; that descriptiveness is the point.
+  FunctionNameMaxLength:
+    active: false
+style:
+  active: true
+  # ktfmt is the sole formatting authority, including multiline raw-string indentation (the JSON
+  # fixture in UserDtoTest); it doesn't reindent raw-string bodies to this rule's expectation.
+  MultilineRawStringIndentation:
+    active: false
