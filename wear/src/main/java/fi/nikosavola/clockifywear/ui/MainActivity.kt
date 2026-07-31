@@ -3,27 +3,14 @@ package fi.nikosavola.clockifywear.ui
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.wear.compose.material3.AppScaffold
-import androidx.wear.compose.material3.Text
-import fi.nikosavola.clockifywear.R
+import fi.nikosavola.clockifywear.ClockifyApp
+import fi.nikosavola.clockifywear.ui.navigation.ClockifyNavHost
 import fi.nikosavola.clockifywear.ui.theme.ClockifyTheme
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    setContent {
-      ClockifyTheme {
-        AppScaffold {
-          Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = stringResource(R.string.app_name))
-          }
-        }
-      }
-    }
+    val appContainer = (application as ClockifyApp).appContainer
+    setContent { ClockifyTheme { ClockifyNavHost(appContainer) } }
   }
 }

@@ -1,4 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Clockify</string>
+
+    <string name="loading">Loading...</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_api_key_label">API key</string>
+    <string name="settings_sign_in_button">Sign in</string>
+    <string name="settings_sign_out_button">Sign out</string>
+    <string name="settings_signing_in">Signing in...</string>
+    <string name="settings_signed_in_workspace">Workspace: %1$s</string>
+
+    <string name="timer_start_button">Start</string>
+    <string name="timer_stop_button">Stop</string>
+    <string name="timer_no_default_project">No default project set. Choose one in the Clockify web app.</string>
+    <string name="timer_no_project_label">No project</string>
+    <string name="timer_go_to_settings_button">Go to Settings</string>
+    <string name="timer_retry_button">Retry</string>
+
+    <string name="error_unauthorized">Invalid API key. Please sign in again.</string>
+    <string name="error_rate_limited">Clockify is rate limiting requests. Try again shortly.</string>
+    <string name="error_offline">No network connection.</string>
+    <string name="error_http">Something went wrong (code %1$d).</string>
+    <string name="error_parse">Unexpected response from Clockify.</string>
+    <string name="error_no_workspace">No workspace found for this account.</string>
+    <string name="error_not_signed_in">Please sign in first.</string>
 </resources>
