@@ -1,8 +1,12 @@
 name: CI
+# Development happens on `dev` and `claude/**` branches while `main` lags behind, so restricting
+# push events to `main` meant the gate never actually ran on the code being written.
 on:
   push:
     branches:
       - main
+      - dev
+      - 'claude/**'
   pull_request:
     branches:
       - main
