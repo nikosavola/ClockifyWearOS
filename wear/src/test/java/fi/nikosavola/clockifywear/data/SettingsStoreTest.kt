@@ -33,6 +33,7 @@ class SettingsStoreTest {
     store.setWorkspaceId("ws-1")
     store.setDefaultProjectId("proj-1")
     store.setDefaultTaskId("task-1")
+    store.setEmail("user@example.com")
 
     val settings = store.currentSettings()
 
@@ -41,6 +42,7 @@ class SettingsStoreTest {
     assertEquals("ws-1", settings.workspaceId)
     assertEquals("proj-1", settings.defaultProjectId)
     assertEquals("task-1", settings.defaultTaskId)
+    assertEquals("user@example.com", settings.email)
   }
 
   @Test
@@ -52,6 +54,15 @@ class SettingsStoreTest {
     assertNull(settings.workspaceId)
     assertNull(settings.defaultProjectId)
     assertNull(settings.defaultTaskId)
+    assertNull(settings.email)
+  }
+
+  @Test
+  fun `setEmail with null removes the stored email`() = runTest {
+    store.setEmail("user@example.com")
+    store.setEmail(null)
+
+    assertNull(store.currentSettings().email)
   }
 
   @Test

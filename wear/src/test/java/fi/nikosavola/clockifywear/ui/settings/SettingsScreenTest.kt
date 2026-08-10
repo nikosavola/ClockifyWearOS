@@ -21,6 +21,7 @@ import fi.nikosavola.clockifywear.data.ProjectCache
 import fi.nikosavola.clockifywear.data.SettingsStore
 import fi.nikosavola.clockifywear.data.api.createClockifyApi
 import java.io.File
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Before
@@ -32,6 +33,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.GraphicsMode
 
 private const val API_KEY = "test-api-key"
+private const val WORKSPACE_ID = "5f8a1b2c3d4e5f6a7b8c9d10"
+private const val EMAIL = "user@example.com"
 private const val WAIT_TIMEOUT_MS = 5_000L
 
 @RunWith(RobolectricTestRunner::class)
@@ -65,8 +68,8 @@ class SettingsScreenTest {
     server.shutdown()
   }
 
-  private fun string(@StringRes resId: Int): String =
-    ApplicationProvider.getApplicationContext<Context>().getString(resId)
+  private fun string(@StringRes resId: Int, vararg formatArgs: Any): String =
+    ApplicationProvider.getApplicationContext<Context>().getString(resId, *formatArgs)
 
   private fun waitForText(text: String) {
     composeRule.waitUntil(timeoutMillis = WAIT_TIMEOUT_MS) {
@@ -107,5 +110,28 @@ class SettingsScreenTest {
     composeRule.onNodeWithText(string(R.string.settings_paste_button)).performClick()
 
     composeRule.onNode(hasSetTextAction()).assertTextContains("clipboard-key")
+  }
+
+  @Test
+  fun `signed-in screen shows the account email when present`() {
+    runBlocking {
+      settingsStore.setWorkspaceId(WORKSPACE_ID)
+      settingsStore.setEmail(EMAIL)
+    }
+    val viewModel = SettingsViewModel(repository, settingsStore)
+
+    composeRule.setContent { SettingsScreen(viewModel = viewModel) }
+
+    waitForText(string(R.string.settings_signed_in_account, EMAIL))
+  }
+
+  @Test
+  fun `signed-in screen falls back to the workspace id when email is missing`() {
+    runBlocking { settingsStore.setWorkspaceId(WORKSPACE_ID) }
+    val viewModel = SettingsViewModel(repository, settingsStore)
+
+    composeRule.setContent { SettingsScreen(viewModel = viewModel) }
+
+    waitForText(string(R.string.settings_signed_in_workspace, WORKSPACE_ID))
   }
 }

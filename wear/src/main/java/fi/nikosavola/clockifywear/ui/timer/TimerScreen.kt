@@ -6,6 +6,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -28,6 +33,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -95,11 +103,18 @@ private const val CLOCK_MINUTE_HAND_LENGTH_FACTOR = 0.55f
 private const val CLOCK_HOUR_HAND_ANGLE_DEGREES = -60f
 private const val CLOCK_MINUTE_HAND_ANGLE_DEGREES = 60f
 private val TOP_BUTTON_ROW_GAP = 8.dp
-private val GEAR_STROKE_WIDTH = 2.5.dp
-private const val GEAR_TOOTH_COUNT = 8
-// Kept short relative to the ring radius so the shape reads as a cog's annulus with square teeth
-// rather than a sunburst of spokes at this icon's small on-screen size.
-private const val GEAR_TOOTH_LENGTH_FACTOR = 0.35f
+// Roughly a quarter of a round watch screen's width: enough that a scroll's incidental horizontal
+// wobble never reaches it, but a deliberate swipe comfortably does.
+private val SETTINGS_SWIPE_THRESHOLD = 56.dp
+// Kept clear of the left edge so this detector never contends with SwipeDismissableNavHost's own
+// swipe-to-dismiss recognition, which starts from that same zone (see NavGraph.kt).
+private val SETTINGS_SWIPE_EDGE_GUARD = 32.dp
+// The glyph itself is well below any named IconButtonDefaults token, since this is a low-emphasis,
+// frequently-tapped utility rather than a peer of the other icon buttons on this screen - but the
+// tappable container stays at Wear OS's minimum accessible touch target (48dp, see
+// https://developer.android.com/training/wearables/accessibility), smaller only visually.
+private val REFRESH_BUTTON_SIZE = 48.dp
+private val REFRESH_ICON_SIZE = 16.dp
 
 @Composable
 fun TimerScreen(
@@ -190,7 +205,18 @@ private fun TimerContent(
   onRefresh: () -> Unit,
   onGoToSettings: () -> Unit,
 ) {
-  Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+  // Settings has no persistent button anymore, reachable only by this swipe, scoped to Idle/Running
+  // exactly like TopButtonRow/the EdgeButton (not Loading/Error).
+  val swipeModifier =
+    if (state is TimerUiState.Idle || state is TimerUiState.Running) {
+      Modifier.swipeToSettings(onGoToSettings)
+    } else {
+      Modifier
+    }
+  Column(
+    modifier = Modifier.fillMaxWidth().then(swipeModifier),
+    horizontalAlignment = Alignment.CenterHorizontally,
+  ) {
     when (state) {
       is TimerUiState.Loading -> Text(text = stringResource(R.string.loading))
       is TimerUiState.Idle ->
@@ -199,24 +225,56 @@ private fun TimerContent(
           onChooseProject = onChooseProject,
           onRecent = onRecent,
           onRefresh = onRefresh,
-          onGoToSettings = onGoToSettings,
         )
       is TimerUiState.Running ->
-        RunningContent(
-          state = state,
-          isRefreshing = isRefreshing,
-          onRefresh = onRefresh,
-          onGoToSettings = onGoToSettings,
-        )
+        RunningContent(state = state, isRefreshing = isRefreshing, onRefresh = onRefresh)
       is TimerUiState.Error ->
         ErrorContent(error = state.error, onRetry = onRetry, onGoToSettings = onGoToSettings)
     }
   }
 }
 
-// Unlike SettingsButton, deliberately plain (no tonal fill) and sized down to
-// ExtraSmallButtonSize: this is the most frequently tapped secondary action on the screen, so it
-// reads as a lightweight, low-emphasis affordance rather than a peer of Choose-Project/Recent.
+private fun Modifier.swipeToSettings(onNavigateToSettings: () -> Unit): Modifier =
+  pointerInput(onNavigateToSettings) {
+    val edgeGuardPx = SETTINGS_SWIPE_EDGE_GUARD.toPx()
+    val thresholdPx = SETTINGS_SWIPE_THRESHOLD.toPx()
+    awaitEachGesture { awaitSettingsSwipe(edgeGuardPx, thresholdPx, onNavigateToSettings) }
+  }
+
+// Hand-rolled rather than detectHorizontalDragGestures: that helper consumes the touch as soon as
+// horizontal slop is crossed, before this code gets a chance to check where the drag started, so
+// a drag beginning in the edge-guard zone would already be stolen from the system back-swipe by
+// the time direction is known. Checking the down position first, before ever calling
+// awaitHorizontalTouchSlopOrCancellation, means a touch in that zone is never consumed here at all.
+private suspend fun AwaitPointerEventScope.awaitSettingsSwipe(
+  edgeGuardPx: Float,
+  thresholdPx: Float,
+  onNavigateToSettings: () -> Unit,
+) {
+  val down = awaitFirstDown(requireUnconsumed = false)
+  if (down.position.x < edgeGuardPx) return
+  var overSlop = 0f
+  val drag =
+    awaitHorizontalTouchSlopOrCancellation(down.id) { change, slop ->
+      change.consume()
+      overSlop = slop
+    } ?: return
+  var accumulated = overSlop
+  var triggered = accumulated <= -thresholdPx
+  if (triggered) onNavigateToSettings()
+  horizontalDrag(drag.id) { change ->
+    accumulated += change.positionChange().x
+    if (!triggered && accumulated <= -thresholdPx) {
+      triggered = true
+      onNavigateToSettings()
+    }
+  }
+}
+
+// Deliberately plain (no tonal fill), grey rather than the theme's vivid content color, and sized
+// below any named IconButtonDefaults token: Settings no longer has a persistent button (reachable
+// only via the swipe gesture), so this is the sole remaining top-of-screen affordance and reads as
+// a lightweight, low-emphasis utility rather than a peer of Choose-Project/Recent.
 @Composable
 private fun RefreshButton(onClick: () -> Unit, isRefreshing: Boolean) {
   // The transition only exists while refreshing, not merely animating toward a resting angle:
@@ -241,48 +299,24 @@ private fun RefreshButton(onClick: () -> Unit, isRefreshing: Boolean) {
     }
   IconButton(
     onClick = onClick,
-    modifier = Modifier.size(IconButtonDefaults.ExtraSmallButtonSize),
+    modifier = Modifier.size(REFRESH_BUTTON_SIZE),
     colors = IconButtonDefaults.iconButtonColors(),
   ) {
-    RefreshIcon(
-      contentDescription = stringResource(R.string.timer_refresh_button),
-      modifier =
-        Modifier.size(IconButtonDefaults.iconSizeFor(IconButtonDefaults.ExtraSmallButtonSize))
-          .rotate(rotationDegrees),
-    )
+    CompositionLocalProvider(
+      LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
+    ) {
+      RefreshIcon(
+        contentDescription = stringResource(R.string.timer_refresh_button),
+        modifier = Modifier.size(REFRESH_ICON_SIZE).rotate(rotationDegrees),
+      )
+    }
   }
 }
 
-// Same small-button sizing as RefreshButton used to have, sitting next to it rather than behind a
-// new route: TimerScreen already receives onNavigateToSettings for the Error state, so this just
-// adds a second call site for the callback it already has.
+// Shared by Idle/Running: the sole top-of-screen entry point, above the rest of the content.
 @Composable
-private fun SettingsButton(onClick: () -> Unit) {
-  FilledTonalIconButton(
-    onClick = onClick,
-    modifier = Modifier.size(IconButtonDefaults.SmallButtonSize),
-  ) {
-    SettingsIcon(
-      contentDescription = stringResource(R.string.timer_settings_button),
-      modifier = Modifier.size(IconButtonDefaults.SmallIconSize),
-    )
-  }
-}
-
-// Shared by Idle/Running: the Refresh and Settings entry points, side by side above the content.
-// Center-aligned vertically (not the Row default of Top) because RefreshButton and SettingsButton
-// are no longer the same height: RefreshButton's ExtraSmallButtonSize container is shorter than
-// SettingsButton's SmallButtonSize one, and top alignment made the smaller one look like it was
-// sinking rather than sitting beside its neighbor.
-@Composable
-private fun TopButtonRow(onRefresh: () -> Unit, onGoToSettings: () -> Unit, isRefreshing: Boolean) {
-  Row(
-    horizontalArrangement = Arrangement.spacedBy(ICON_BUTTON_ROW_GAP),
-    verticalAlignment = Alignment.CenterVertically,
-  ) {
-    RefreshButton(onClick = onRefresh, isRefreshing = isRefreshing)
-    SettingsButton(onClick = onGoToSettings)
-  }
+private fun TopButtonRow(onRefresh: () -> Unit, isRefreshing: Boolean) {
+  RefreshButton(onClick = onRefresh, isRefreshing = isRefreshing)
   Spacer(modifier = Modifier.height(TOP_BUTTON_ROW_GAP))
 }
 
@@ -292,9 +326,8 @@ private fun IdleContent(
   onChooseProject: () -> Unit,
   onRecent: () -> Unit,
   onRefresh: () -> Unit,
-  onGoToSettings: () -> Unit,
 ) {
-  TopButtonRow(onRefresh = onRefresh, onGoToSettings = onGoToSettings, isRefreshing = isRefreshing)
+  TopButtonRow(onRefresh = onRefresh, isRefreshing = isRefreshing)
   Row(horizontalArrangement = Arrangement.spacedBy(ICON_BUTTON_ROW_GAP)) {
     FilledTonalIconButton(
       onClick = onChooseProject,
@@ -319,9 +352,8 @@ private fun RunningContent(
   state: TimerUiState.Running,
   isRefreshing: Boolean,
   onRefresh: () -> Unit,
-  onGoToSettings: () -> Unit,
 ) {
-  TopButtonRow(onRefresh = onRefresh, onGoToSettings = onGoToSettings, isRefreshing = isRefreshing)
+  TopButtonRow(onRefresh = onRefresh, isRefreshing = isRefreshing)
   Row(verticalAlignment = Alignment.CenterVertically) {
     ProjectColorDot(color = state.projectColor)
     Spacer(modifier = Modifier.width(PROJECT_LABEL_ROW_GAP))
@@ -493,36 +525,6 @@ private fun ClockIcon(contentDescription: String, modifier: Modifier = Modifier)
       color = color,
       strokeWidth = handStrokeWidth,
     )
-  }
-}
-
-@Composable
-private fun SettingsIcon(contentDescription: String, modifier: Modifier = Modifier) {
-  GlyphIcon(contentDescription, modifier) { color ->
-    val strokeWidth = GEAR_STROKE_WIDTH.toPx()
-    // The tooth tip (plus its round cap overshoot) lands exactly on the icon's edge, same as
-    // ClockIcon's ring; the ring itself sits further in, leaving room for the teeth outside it.
-    val maxRadius = minOf(size.width, size.height) / 2f - strokeWidth / 2f
-    val toothLength = maxRadius * GEAR_TOOTH_LENGTH_FACTOR
-    val ringRadius = maxRadius - toothLength
-    val center = Offset(size.width / 2f, size.height / 2f)
-    drawCircle(
-      color = color,
-      radius = ringRadius,
-      center = center,
-      style = Stroke(width = strokeWidth),
-    )
-    for (tooth in 0 until GEAR_TOOTH_COUNT) {
-      val angleRadians = Math.toRadians(tooth * 360.0 / GEAR_TOOTH_COUNT)
-      val direction = Offset(cos(angleRadians).toFloat(), sin(angleRadians).toFloat())
-      drawLine(
-        color = color,
-        start = center + direction * ringRadius,
-        end = center + direction * maxRadius,
-        strokeWidth = strokeWidth,
-        cap = StrokeCap.Round,
-      )
-    }
   }
 }
 

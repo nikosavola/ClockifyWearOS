@@ -61,7 +61,14 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
 
 @Composable
 private fun SignedInContent(state: SettingsUiState.SignedIn, onSignOut: () -> Unit) {
-  Text(text = stringResource(R.string.settings_signed_in_workspace, state.workspaceId))
+  // Email is the friendlier identity to show; fall back to the raw workspace id if it is ever
+  // missing so the screen never regresses to showing nothing.
+  val email = state.email
+  if (email != null && email.isNotBlank()) {
+    Text(text = stringResource(R.string.settings_signed_in_account, email))
+  } else {
+    Text(text = stringResource(R.string.settings_signed_in_workspace, state.workspaceId))
+  }
   Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
     Text(text = stringResource(R.string.settings_sign_out_button))
   }

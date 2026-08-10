@@ -2,6 +2,7 @@ package fi.nikosavola.clockifywear.ui.timer
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -9,7 +10,10 @@ import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.test.core.app.ApplicationProvider
 import fi.nikosavola.clockifywear.R
@@ -23,6 +27,7 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -91,6 +96,18 @@ class TimerScreenTest {
       composeRule.onAllNodesWithContentDescription(description).fetchSemanticsNodes().isNotEmpty()
     }
   }
+
+  // The swipeable Column wraps the screen's real content, not the whole root: its vertical extent
+  // moved when the content switched from Arrangement.Center to Arrangement.Top, so a touch at the
+  // root's centerY can miss it entirely. Anchoring on a real content node's own position keeps
+  // these gesture tests targeting the actual swipeable area regardless of how it is arranged.
+  private fun contentCenterY(contentDescription: String): Float =
+    composeRule
+      .onNodeWithContentDescription(contentDescription)
+      .fetchSemanticsNode()
+      .boundsInRoot
+      .center
+      .y
 
   @Test
   fun `idle state without a default project shows a choose-project button`() {
@@ -342,106 +359,6 @@ class TimerScreenTest {
   }
 
   @Test
-  fun `idle state shows an enabled settings button`() {
-    primeIdentity()
-    server.enqueue(MockResponse().setBody("[]"))
-    val viewModel = TimerViewModel(repository, settingsStore)
-
-    composeRule.setContent {
-      TimerScreen(
-        viewModel = viewModel,
-        onNavigateToSettings = {},
-        onNavigateToProjectPicker = {},
-        onNavigateToRecents = {},
-      )
-    }
-
-    waitForContentDescription(string(R.string.timer_settings_button))
-    composeRule
-      .onNodeWithContentDescription(string(R.string.timer_settings_button))
-      .assertIsEnabled()
-  }
-
-  @Test
-  fun `clicking the settings button on the idle screen navigates to Settings`() {
-    primeIdentity()
-    server.enqueue(MockResponse().setBody("[]"))
-    val viewModel = TimerViewModel(repository, settingsStore)
-    var navigatedToSettings = false
-
-    composeRule.setContent {
-      TimerScreen(
-        viewModel = viewModel,
-        onNavigateToSettings = { navigatedToSettings = true },
-        onNavigateToProjectPicker = {},
-        onNavigateToRecents = {},
-      )
-    }
-
-    waitForContentDescription(string(R.string.timer_settings_button))
-    composeRule.onNodeWithContentDescription(string(R.string.timer_settings_button)).performClick()
-
-    assertTrue(navigatedToSettings)
-  }
-
-  @Test
-  fun `running state shows an enabled settings button`() {
-    primeIdentity()
-    val start = Instant.parse("2026-07-31T09:00:00Z")
-    server.enqueue(
-      MockResponse()
-        .setBody(
-          """[{"id": "e1", "projectId": "$PROJECT_ID", "timeInterval": {"start": "$start"}}]"""
-        )
-    )
-    server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
-    val viewModel = TimerViewModel(repository, settingsStore, clock = { start.plusSeconds(5) })
-
-    composeRule.setContent {
-      TimerScreen(
-        viewModel = viewModel,
-        onNavigateToSettings = {},
-        onNavigateToProjectPicker = {},
-        onNavigateToRecents = {},
-      )
-    }
-
-    waitForText("00:00:05")
-    composeRule
-      .onNodeWithContentDescription(string(R.string.timer_settings_button))
-      .assertIsEnabled()
-  }
-
-  @Test
-  fun `clicking the settings button on the running screen navigates to Settings`() {
-    primeIdentity()
-    val start = Instant.parse("2026-07-31T09:00:00Z")
-    server.enqueue(
-      MockResponse()
-        .setBody(
-          """[{"id": "e1", "projectId": "$PROJECT_ID", "timeInterval": {"start": "$start"}}]"""
-        )
-    )
-    server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
-    val viewModel = TimerViewModel(repository, settingsStore, clock = { start.plusSeconds(5) })
-    var navigatedToSettings = false
-
-    composeRule.setContent {
-      TimerScreen(
-        viewModel = viewModel,
-        onNavigateToSettings = { navigatedToSettings = true },
-        onNavigateToProjectPicker = {},
-        onNavigateToRecents = {},
-      )
-    }
-
-    waitForText("00:00:05")
-    composeRule.onNodeWithContentDescription(string(R.string.timer_settings_button)).performClick()
-
-    assertTrue(navigatedToSettings)
-  }
-
-  @Test
   fun `unauthorized error state offers a button to Settings`() {
     primeIdentity()
     server.enqueue(MockResponse().setResponseCode(401))
@@ -458,5 +375,121 @@ class TimerScreenTest {
 
     waitForText(string(R.string.error_unauthorized))
     composeRule.onNodeWithText(string(R.string.timer_go_to_settings_button)).assertExists()
+  }
+
+  @Test
+  fun `swiping left on the idle screen navigates to Settings`() {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+    var navigatedToSettings = false
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = { navigatedToSettings = true },
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForContentDescription(string(R.string.timer_start_button))
+    val y = contentCenterY(string(R.string.timer_refresh_button))
+    // A manual gesture rather than the swipeLeft() default: that helper sweeps from the root's
+    // true right edge, which ScreenScaffold insets away from for a round screen, so the down
+    // event lands outside the swipeable Column and the gesture never reaches it.
+    composeRule.onRoot().performTouchInput {
+      down(Offset(centerX + width / 4f, y))
+      moveBy(Offset(-(width / 2f), 0f))
+      up()
+    }
+
+    assertTrue(navigatedToSettings)
+  }
+
+  @Test
+  fun `swiping right on the idle screen does not navigate to Settings`() {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+    var navigatedToSettings = false
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = { navigatedToSettings = true },
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForContentDescription(string(R.string.timer_start_button))
+    val y = contentCenterY(string(R.string.timer_refresh_button))
+    // Starts mid-screen rather than at x=0: starting from the left edge would exercise the
+    // edge-guard bail instead of the direction filter this test actually targets.
+    composeRule.onRoot().performTouchInput {
+      down(Offset(centerX, y))
+      moveBy(Offset(width / 4f, 0f))
+      up()
+    }
+
+    assertFalse(navigatedToSettings)
+  }
+
+  @Test
+  fun `swiping up on the idle screen does not navigate to Settings`() {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+    var navigatedToSettings = false
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = { navigatedToSettings = true },
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForContentDescription(string(R.string.timer_start_button))
+    val y = contentCenterY(string(R.string.timer_refresh_button))
+    composeRule.onRoot().performTouchInput {
+      down(Offset(centerX, y))
+      moveBy(Offset(0f, -50.dp.toPx()))
+      up()
+    }
+
+    assertFalse(navigatedToSettings)
+  }
+
+  @Test
+  fun `a small leftward drag on the idle screen does not navigate to Settings`() {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+    var navigatedToSettings = false
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = { navigatedToSettings = true },
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForContentDescription(string(R.string.timer_start_button))
+    val y = contentCenterY(string(R.string.timer_refresh_button))
+    // Above touch slop (so it is recognized as a horizontal drag at all) but well under the
+    // screen's swipe-to-Settings threshold, so this is an accidental wobble, not a deliberate
+    // swipe.
+    composeRule.onRoot().performTouchInput {
+      down(Offset(centerX, y))
+      moveBy(Offset(-30.dp.toPx(), 0f))
+      up()
+    }
+
+    assertFalse(navigatedToSettings)
   }
 }

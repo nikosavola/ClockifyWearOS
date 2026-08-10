@@ -214,6 +214,7 @@ class ClockifyRepository(
       is ClockifyResult.Success -> {
         settingsStore.setUserId(user.id)
         settingsStore.setWorkspaceId(workspaceResult.value)
+        settingsStore.setEmail(user.email)
         ClockifyResult.Success(user)
       }
     }

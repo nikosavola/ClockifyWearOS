@@ -10,5 +10,5 @@ sealed interface SettingsUiState {
 
   data object SigningIn : SettingsUiState
 
-  data class SignedIn(val workspaceId: String) : SettingsUiState
+  data class SignedIn(val email: String?, val workspaceId: String) : SettingsUiState
 }

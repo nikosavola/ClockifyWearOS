@@ -30,11 +30,12 @@ import org.robolectric.RobolectricTestRunner
 private const val WORKSPACE_ID = "5f8a1b2c3d4e5f6a7b8c9d10"
 private const val USER_ID = "5f8a1b2c3d4e5f6a7b8c9d0e"
 private const val API_KEY = "test-api-key"
+private const val EMAIL = "user@example.com"
 
-private fun userJson(activeWorkspace: String? = null): String =
+private fun userJson(activeWorkspace: String? = null, email: String? = null): String =
   clockifyJson.encodeToString(
     UserDto.serializer(),
-    UserDto(id = USER_ID, activeWorkspace = activeWorkspace),
+    UserDto(id = USER_ID, email = email, activeWorkspace = activeWorkspace),
   )
 
 // See TimerViewModelTest's top comment: job.join() (a real suspension) is used instead of
@@ -94,6 +95,7 @@ class SettingsViewModelTest {
       val state = viewModel.uiState.value
       assertTrue(state is SettingsUiState.SignedIn)
       assertEquals(WORKSPACE_ID, (state as SettingsUiState.SignedIn).workspaceId)
+      assertNull(state.email)
     }
 
   @Test
@@ -108,6 +110,22 @@ class SettingsViewModelTest {
       val state = viewModel.uiState.value
       assertTrue(state is SettingsUiState.SignedIn)
       assertEquals(WORKSPACE_ID, (state as SettingsUiState.SignedIn).workspaceId)
+    }
+
+  @Test
+  fun `signIn success surfaces SignedIn with the persisted email`() =
+    runTest(testDispatcher) {
+      server.enqueue(
+        MockResponse().setBody(userJson(activeWorkspace = WORKSPACE_ID, email = EMAIL))
+      )
+      val viewModel = SettingsViewModel(repository, settingsStore)
+      viewModel.load().join()
+
+      viewModel.signIn(API_KEY).join()
+
+      val state = viewModel.uiState.value
+      assertTrue(state is SettingsUiState.SignedIn)
+      assertEquals(EMAIL, (state as SettingsUiState.SignedIn).email)
     }
 
   @Test

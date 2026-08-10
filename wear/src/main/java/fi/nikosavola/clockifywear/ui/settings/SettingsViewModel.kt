@@ -46,10 +46,11 @@ class SettingsViewModel(
   }
 
   private suspend fun refresh() {
-    val workspaceId = settingsStore.currentSettings().workspaceId
+    val settings = settingsStore.currentSettings()
+    val workspaceId = settings.workspaceId
     mutableUiState.value =
       if (workspaceId != null) {
-        SettingsUiState.SignedIn(workspaceId = workspaceId)
+        SettingsUiState.SignedIn(email = settings.email, workspaceId = workspaceId)
       } else {
         SettingsUiState.SignedOut()
       }

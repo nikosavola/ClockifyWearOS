@@ -34,11 +34,21 @@ private const val OTHER_WORKSPACE_ID = "5f8a1b2c3d4e5f6a7b8c9d99"
 private const val USER_ID = "5f8a1b2c3d4e5f6a7b8c9d0e"
 private const val PROJECT_ID = "5f8a1b2c3d4e5f6a7b8c9d20"
 private const val API_KEY = "test-api-key"
+private const val EMAIL = "user@example.com"
 
-private fun userJson(activeWorkspace: String? = null, defaultWorkspace: String? = null): String =
+private fun userJson(
+  activeWorkspace: String? = null,
+  defaultWorkspace: String? = null,
+  email: String? = null,
+): String =
   clockifyJson.encodeToString(
     UserDto.serializer(),
-    UserDto(id = USER_ID, activeWorkspace = activeWorkspace, defaultWorkspace = defaultWorkspace),
+    UserDto(
+      id = USER_ID,
+      email = email,
+      activeWorkspace = activeWorkspace,
+      defaultWorkspace = defaultWorkspace,
+    ),
   )
 
 private fun projectJson(id: String, archived: Boolean = false): String =
@@ -106,6 +116,24 @@ class ClockifyRepositoryTest {
     assertEquals(API_KEY, settings.apiKey)
     assertEquals(USER_ID, settings.userId)
     assertEquals(WORKSPACE_ID, settings.workspaceId)
+  }
+
+  @Test
+  fun `signIn persists the email from the user response`() = runTest {
+    server.enqueue(MockResponse().setBody(userJson(activeWorkspace = WORKSPACE_ID, email = EMAIL)))
+
+    repository.signIn(API_KEY)
+
+    assertEquals(EMAIL, settingsStore.currentSettings().email)
+  }
+
+  @Test
+  fun `signIn persists a null email when the user response omits it`() = runTest {
+    server.enqueue(MockResponse().setBody(userJson(activeWorkspace = WORKSPACE_ID)))
+
+    repository.signIn(API_KEY)
+
+    assertNull(settingsStore.currentSettings().email)
   }
 
   @Test

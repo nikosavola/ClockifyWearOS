@@ -10,8 +10,9 @@ import kotlinx.coroutines.flow.map
 
 /**
  * All persisted settings as one value. A single [Flow] of this data class is exposed instead of
- * five separate flows: repository code almost always needs workspaceId and userId together, and
- * combining five independent flows at every call site would be more boilerplate than one read.
+ * separate flows per field: repository code almost always needs workspaceId and userId together,
+ * and combining several independent flows at every call site would be more boilerplate than one
+ * read.
  */
 data class Settings(
   val apiKey: String? = null,
@@ -19,6 +20,7 @@ data class Settings(
   val workspaceId: String? = null,
   val defaultProjectId: String? = null,
   val defaultTaskId: String? = null,
+  val email: String? = null,
 )
 
 /**
@@ -35,6 +37,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
   private val workspaceIdKey = stringPreferencesKey("workspace_id")
   private val defaultProjectIdKey = stringPreferencesKey("default_project_id")
   private val defaultTaskIdKey = stringPreferencesKey("default_task_id")
+  private val emailKey = stringPreferencesKey("email")
 
   // createClockifyApi needs a synchronous `() -> String?` supplier for its OkHttp interceptor,
   // which runs on an OkHttp dispatcher thread and must never block on a DataStore Flow. This
@@ -53,6 +56,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
           workspaceId = prefs[workspaceIdKey],
           defaultProjectId = prefs[defaultProjectIdKey],
           defaultTaskId = prefs[defaultTaskIdKey],
+          email = prefs[emailKey],
         )
         .also { cachedApiKey = it.apiKey }
     }
@@ -74,6 +78,8 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
   suspend fun setDefaultProjectId(projectId: String?) = setOrRemove(defaultProjectIdKey, projectId)
 
   suspend fun setDefaultTaskId(taskId: String?) = setOrRemove(defaultTaskIdKey, taskId)
+
+  suspend fun setEmail(email: String?) = setOrRemove(emailKey, email)
 
   /** Clears all persisted settings, e.g. on sign-out. */
   suspend fun clear() {

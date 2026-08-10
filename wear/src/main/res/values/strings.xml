@@ -12,6 +12,7 @@
     <string name="settings_sign_out_button">Sign out</string>
     <string name="settings_signing_in">Signing in...</string>
     <string name="settings_signed_in_workspace">Workspace: %1$s</string>
+    <string name="settings_signed_in_account">Signed in as %1$s</string>
 
     <string name="timer_start_button">Start</string>
     <string name="timer_stop_button">Stop</string>
@@ -21,7 +22,6 @@
     <string name="timer_choose_project_button">Choose project</string>
     <string name="timer_recent_button">Recent</string>
     <string name="timer_refresh_button">Refresh</string>
-    <string name="timer_settings_button">Settings</string>
 
     <string name="project_picker_title">Choose project</string>
     <string name="project_picker_empty">No projects found. Add one in the Clockify web app.</string>
