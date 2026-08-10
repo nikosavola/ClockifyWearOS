@@ -22,10 +22,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
-import androidx.wear.compose.material3.TextButton
 import fi.nikosavola.clockifywear.R
 import fi.nikosavola.clockifywear.ui.errorMessage
 
@@ -62,7 +62,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
 @Composable
 private fun SignedInContent(state: SettingsUiState.SignedIn, onSignOut: () -> Unit) {
   Text(text = stringResource(R.string.settings_signed_in_workspace, state.workspaceId))
-  Button(onClick = onSignOut) { Text(text = stringResource(R.string.settings_sign_out_button)) }
+  Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
+    Text(text = stringResource(R.string.settings_sign_out_button))
+  }
 }
 
 @Composable
@@ -95,10 +97,17 @@ private fun SignedOutContent(state: SettingsUiState.SignedOut, onSignIn: (String
   // Data Layer code. Long-press-to-paste on BasicTextField is not reliably discoverable on a
   // small round screen, so this button reads the clipboard directly as a visible alternative.
   Text(text = stringResource(R.string.settings_clipboard_hint))
-  TextButton(onClick = { clipboardManager.getText()?.let { apiKeyInput = it.text } }) {
+  FilledTonalButton(
+    onClick = { clipboardManager.getText()?.let { apiKeyInput = it.text } },
+    modifier = Modifier.fillMaxWidth(),
+  ) {
     Text(text = stringResource(R.string.settings_paste_button))
   }
-  Button(onClick = { onSignIn(apiKeyInput) }, enabled = apiKeyInput.isNotBlank()) {
+  Button(
+    onClick = { onSignIn(apiKeyInput) },
+    modifier = Modifier.fillMaxWidth(),
+    enabled = apiKeyInput.isNotBlank(),
+  ) {
     Text(text = stringResource(R.string.settings_sign_in_button))
   }
 }

@@ -6,7 +6,9 @@ import fi.nikosavola.clockifywear.data.ClockifyRepository
 import fi.nikosavola.clockifywear.data.ClockifyResult
 import fi.nikosavola.clockifywear.data.Settings
 import fi.nikosavola.clockifywear.data.SettingsStore
+import fi.nikosavola.clockifywear.data.api.dto.ProjectDto
 import fi.nikosavola.clockifywear.data.api.dto.TimeEntryDto
+import fi.nikosavola.clockifywear.ui.projects.parseProjectColor
 import java.time.Duration
 import java.time.Instant
 import kotlin.coroutines.coroutineContext
@@ -107,21 +109,24 @@ class TimerViewModel(
         val hasDefault = settingsStore.currentSettings().defaultProjectId != null
         TimerUiState.Idle(hasDefaultProject = hasDefault)
       } else {
+        val project = entry.projectId?.let { resolveProject(it) }
         TimerUiState.Running(
           projectId = entry.projectId,
-          projectName = entry.projectId?.let { resolveProjectName(it) },
+          projectName = project?.name,
+          projectColor = project?.color?.let(::parseProjectColor),
           startInstant = entry.timeInterval.start,
           elapsedSeconds = Duration.between(entry.timeInterval.start, clock()).seconds,
         )
       }
   }
 
-  // Cosmetic-only lookup: a failed or unresolved name must never turn an otherwise-successful
+  // Cosmetic-only lookup: a failed or unresolved project must never turn an otherwise-successful
   // running-entry fetch into an error state, same tolerance as
-  // TaskPickerViewModel.resolveProjectName.
-  private suspend fun resolveProjectName(projectId: String): String? =
+  // TaskPickerViewModel.resolveProjectName. Resolves name and color from the same call so no
+  // second network request is made just to look up the color.
+  private suspend fun resolveProject(projectId: String): ProjectDto? =
     when (val result = repository.projects()) {
-      is ClockifyResult.Success -> result.value.firstOrNull { it.id == projectId }?.name
+      is ClockifyResult.Success -> result.value.firstOrNull { it.id == projectId }
       is ClockifyResult.Failure -> null
     }
 }

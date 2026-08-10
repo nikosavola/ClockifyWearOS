@@ -1,19 +1,19 @@
 package fi.nikosavola.clockifywear.ui.recents
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
+import androidx.wear.compose.material3.Button
+import androidx.wear.compose.material3.ButtonDefaults
+import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
 import fi.nikosavola.clockifywear.R
@@ -36,7 +36,7 @@ fun RecentsScreen(
   val listState = rememberTransformingLazyColumnState()
   ScreenScaffold(scrollState = listState) { contentPadding ->
     TransformingLazyColumn(state = listState, contentPadding = contentPadding) {
-      item { Text(text = stringResource(R.string.recents_title)) }
+      item { ListHeader { Text(text = stringResource(R.string.recents_title)) } }
       when (val state = uiState) {
         is RecentsUiState.Loading -> {
           item { Text(text = stringResource(R.string.loading)) }
@@ -72,10 +72,19 @@ fun RecentsScreen(
 
 @Composable
 private fun RecentRow(entry: RecentEntryDisplay, onClick: () -> Unit) {
-  Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(8.dp)) {
-    Text(text = entry.projectName)
-    if (!entry.description.isNullOrBlank()) {
-      Text(text = entry.description)
+  val description = entry.description
+  val secondaryLabel: (@Composable RowScope.() -> Unit)? =
+    if (!description.isNullOrBlank()) {
+      { Text(text = description) }
+    } else {
+      null
     }
+  Button(
+    onClick = onClick,
+    modifier = Modifier.fillMaxWidth(),
+    secondaryLabel = secondaryLabel,
+    colors = ButtonDefaults.filledTonalButtonColors(),
+  ) {
+    Text(text = entry.projectName)
   }
 }

@@ -6,6 +6,7 @@ import fi.nikosavola.clockifywear.data.ClockifyRepository
 import fi.nikosavola.clockifywear.data.ProjectCache
 import fi.nikosavola.clockifywear.data.SettingsStore
 import fi.nikosavola.clockifywear.data.api.createClockifyApi
+import fi.nikosavola.clockifywear.ui.projects.parseProjectColor
 import java.io.File
 import java.time.Instant
 import kotlinx.coroutines.Dispatchers
@@ -139,6 +140,54 @@ class TimerViewModelTest {
       assertTrue(state is TimerUiState.Running)
       assertEquals(PROJECT_ID, (state as TimerUiState.Running).projectId)
       assertEquals("Website", state.projectName)
+    }
+
+  @Test
+  fun `onForeground with a running entry resolves the project color from the projects list`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(MockResponse().setBody(runningEntryListJson("running")))
+      server.enqueue(
+        MockResponse().setBody("""[{"id": "$PROJECT_ID", "name": "Website", "color": "#1976D2"}]""")
+      )
+      val viewModel = TimerViewModel(repository, settingsStore)
+
+      viewModel.onForeground().join()
+
+      val state = viewModel.uiState.value
+      assertTrue(state is TimerUiState.Running)
+      assertEquals(parseProjectColor("#1976D2"), (state as TimerUiState.Running).projectColor)
+    }
+
+  @Test
+  fun `onForeground with a running entry tolerates a project with no color`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(MockResponse().setBody(runningEntryListJson("running")))
+      server.enqueue(MockResponse().setBody("""[{"id": "$PROJECT_ID", "name": "Website"}]"""))
+      val viewModel = TimerViewModel(repository, settingsStore)
+
+      viewModel.onForeground().join()
+
+      val state = viewModel.uiState.value
+      assertTrue(state is TimerUiState.Running)
+      assertEquals("Website", (state as TimerUiState.Running).projectName)
+      assertEquals(null, state.projectColor)
+    }
+
+  @Test
+  fun `onForeground with a running entry tolerates no matching project for color`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(MockResponse().setBody(runningEntryListJson("running")))
+      server.enqueue(MockResponse().setBody("[]")) // no project matches the running entry's id
+      val viewModel = TimerViewModel(repository, settingsStore)
+
+      viewModel.onForeground().join()
+
+      val state = viewModel.uiState.value
+      assertTrue(state is TimerUiState.Running)
+      assertEquals(null, (state as TimerUiState.Running).projectColor)
     }
 
   @Test

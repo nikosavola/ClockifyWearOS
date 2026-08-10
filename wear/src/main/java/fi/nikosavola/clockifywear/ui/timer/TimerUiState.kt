@@ -1,5 +1,6 @@
 package fi.nikosavola.clockifywear.ui.timer
 
+import androidx.compose.ui.graphics.Color
 import fi.nikosavola.clockifywear.data.ClockifyError
 import java.time.Instant
 
@@ -12,6 +13,7 @@ sealed interface TimerUiState {
   data class Running(
     val projectId: String?,
     val projectName: String?,
+    val projectColor: Color?,
     val startInstant: Instant,
     val elapsedSeconds: Long,
   ) : TimerUiState
