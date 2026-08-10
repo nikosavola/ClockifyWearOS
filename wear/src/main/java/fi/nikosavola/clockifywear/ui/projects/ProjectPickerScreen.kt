@@ -10,11 +10,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.foundation.lazy.TransformingLazyColumn
 import androidx.wear.compose.foundation.lazy.items
 import androidx.wear.compose.foundation.lazy.rememberTransformingLazyColumnState
-import androidx.wear.compose.material3.Button
-import androidx.wear.compose.material3.ButtonDefaults
 import androidx.wear.compose.material3.ListHeader
 import androidx.wear.compose.material3.ScreenScaffold
+import androidx.wear.compose.material3.SurfaceTransformation
 import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.lazy.rememberTransformationSpec
+import androidx.wear.compose.material3.lazy.transformedHeight
 import fi.nikosavola.clockifywear.R
 import fi.nikosavola.clockifywear.data.api.dto.ProjectDto
 import fi.nikosavola.clockifywear.ui.ErrorContent
@@ -30,6 +31,7 @@ fun ProjectPickerScreen(
   LaunchedEffect(viewModel) { viewModel.load() }
 
   val listState = rememberTransformingLazyColumnState()
+  val transformationSpec = rememberTransformationSpec()
   ScreenScaffold(scrollState = listState) { contentPadding ->
     TransformingLazyColumn(state = listState, contentPadding = contentPadding) {
       item { ListHeader { Text(text = stringResource(R.string.project_picker_title)) } }
@@ -51,7 +53,14 @@ fun ProjectPickerScreen(
             item { Text(text = stringResource(R.string.project_picker_empty)) }
           } else {
             items(items = state.projects, key = { it.id }) { project ->
-              ProjectRow(project = project, onClick = { onProjectSelected(project.id) })
+              ProjectRow(
+                project = project,
+                onClick = { onProjectSelected(project.id) },
+                // Needs the item scope's implicit receiver (`this`), so it can't be resolved
+                // inside ProjectRow itself; the item scope only exists here in the items{} lambda.
+                modifier = Modifier.fillMaxWidth().transformedHeight(this, transformationSpec),
+                transformation = SurfaceTransformation(transformationSpec),
+              )
             }
           }
         }
@@ -61,13 +70,17 @@ fun ProjectPickerScreen(
 }
 
 @Composable
-private fun ProjectRow(project: ProjectDto, onClick: () -> Unit) {
-  Button(
+private fun ProjectRow(
+  project: ProjectDto,
+  onClick: () -> Unit,
+  modifier: Modifier,
+  transformation: SurfaceTransformation,
+) {
+  PickerRow(
+    title = project.name,
+    color = parseProjectColor(project.color),
     onClick = onClick,
-    modifier = Modifier.fillMaxWidth(),
-    icon = { ProjectColorDot(color = parseProjectColor(project.color)) },
-    colors = ButtonDefaults.filledTonalButtonColors(),
-  ) {
-    Text(text = project.name)
-  }
+    modifier = modifier,
+    transformation = transformation,
+  )
 }

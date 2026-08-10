@@ -42,6 +42,11 @@ class TimerViewModel(
   private val mutableUiState = MutableStateFlow<TimerUiState>(TimerUiState.Loading)
   val uiState: StateFlow<TimerUiState> = mutableUiState.asStateFlow()
 
+  // Separate from uiState: "a refresh is in flight" is orthogonal to which state is currently
+  // showing (Idle/Running/Error all keep rendering while a background refresh reloads them).
+  private val mutableIsRefreshing = MutableStateFlow(false)
+  val isRefreshing: StateFlow<Boolean> = mutableIsRefreshing.asStateFlow()
+
   /**
    * Called from the screen's lifecycle-scoped collection site on every foreground. Returns the
    * launched [Job] so tests can `join()` it: a real suspension, unlike
@@ -96,10 +101,15 @@ class TimerViewModel(
   }
 
   private suspend fun loadRunning() {
-    settingsPrimed.await()
-    when (val result = repository.fetchRunningEntry()) {
-      is ClockifyResult.Success -> applyEntry(result.value)
-      is ClockifyResult.Failure -> mutableUiState.value = TimerUiState.Error(result.error)
+    mutableIsRefreshing.value = true
+    try {
+      settingsPrimed.await()
+      when (val result = repository.fetchRunningEntry()) {
+        is ClockifyResult.Success -> applyEntry(result.value)
+        is ClockifyResult.Failure -> mutableUiState.value = TimerUiState.Error(result.error)
+      }
+    } finally {
+      mutableIsRefreshing.value = false
     }
   }
 
@@ -116,6 +126,7 @@ class TimerViewModel(
           projectColor = project?.color?.let(::parseProjectColor),
           startInstant = entry.timeInterval.start,
           elapsedSeconds = Duration.between(entry.timeInterval.start, clock()).seconds,
+          description = entry.description?.takeIf { it.isNotBlank() },
         )
       }
   }

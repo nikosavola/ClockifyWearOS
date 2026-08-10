@@ -20,6 +20,8 @@
     <string name="timer_retry_button">Retry</string>
     <string name="timer_choose_project_button">Choose project</string>
     <string name="timer_recent_button">Recent</string>
+    <string name="timer_refresh_button">Refresh</string>
+    <string name="timer_settings_button">Settings</string>
 
     <string name="project_picker_title">Choose project</string>
     <string name="project_picker_empty">No projects found. Add one in the Clockify web app.</string>

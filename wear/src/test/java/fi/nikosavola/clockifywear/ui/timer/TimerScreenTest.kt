@@ -5,8 +5,11 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.test.core.app.ApplicationProvider
 import fi.nikosavola.clockifywear.R
@@ -20,6 +23,7 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -82,6 +86,12 @@ class TimerScreenTest {
     }
   }
 
+  private fun waitForContentDescription(description: String) {
+    composeRule.waitUntil(timeoutMillis = WAIT_TIMEOUT_MS) {
+      composeRule.onAllNodesWithContentDescription(description).fetchSemanticsNodes().isNotEmpty()
+    }
+  }
+
   @Test
   fun `idle state without a default project shows a choose-project button`() {
     primeIdentity()
@@ -97,8 +107,10 @@ class TimerScreenTest {
       )
     }
 
-    waitForText(string(R.string.timer_choose_project_button))
-    composeRule.onNodeWithText(string(R.string.timer_choose_project_button)).assertIsEnabled()
+    waitForContentDescription(string(R.string.timer_start_button))
+    composeRule
+      .onNodeWithContentDescription(string(R.string.timer_choose_project_button))
+      .assertIsEnabled()
   }
 
   @Test
@@ -116,8 +128,32 @@ class TimerScreenTest {
       )
     }
 
-    waitForText(string(R.string.timer_start_button))
-    composeRule.onNodeWithText(string(R.string.timer_choose_project_button)).assertIsEnabled()
+    waitForContentDescription(string(R.string.timer_start_button))
+    composeRule
+      .onNodeWithContentDescription(string(R.string.timer_choose_project_button))
+      .assertIsEnabled()
+  }
+
+  @Test
+  fun `idle state without a default project routes the edge button to project picker, not start`() {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+    var choseProject = false
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = { choseProject = true },
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForContentDescription(string(R.string.timer_start_button))
+    composeRule.onNodeWithContentDescription(string(R.string.timer_start_button)).performClick()
+
+    assertTrue(choseProject)
   }
 
   @Test
@@ -144,7 +180,7 @@ class TimerScreenTest {
     }
 
     waitForText("00:00:05")
-    composeRule.onNodeWithText(string(R.string.timer_stop_button)).assertExists()
+    composeRule.onNodeWithContentDescription(string(R.string.timer_stop_button)).assertIsEnabled()
   }
 
   @Test
@@ -171,6 +207,238 @@ class TimerScreenTest {
 
     waitForText("Website")
     composeRule.onAllNodesWithText(PROJECT_ID).assertCountEquals(0)
+  }
+
+  @Test
+  fun `idle state shows an enabled refresh button`() {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForContentDescription(string(R.string.timer_refresh_button))
+    composeRule
+      .onNodeWithContentDescription(string(R.string.timer_refresh_button))
+      .assertIsEnabled()
+  }
+
+  @Test
+  fun `clicking the refresh button on the idle screen makes a real request and can surface a newly running entry`() {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+    waitForContentDescription(string(R.string.timer_refresh_button))
+
+    val start = Instant.parse("2026-07-31T09:00:00Z")
+    server.enqueue(
+      MockResponse()
+        .setBody(
+          """[{"id": "e1", "projectId": "$PROJECT_ID", "timeInterval": {"start": "$start"}}]"""
+        )
+    )
+    server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+    composeRule.onNodeWithContentDescription(string(R.string.timer_refresh_button)).performClick()
+
+    waitForContentDescription(string(R.string.timer_stop_button))
+  }
+
+  @Test
+  fun `running state shows an enabled refresh button`() {
+    primeIdentity()
+    val start = Instant.parse("2026-07-31T09:00:00Z")
+    server.enqueue(
+      MockResponse()
+        .setBody(
+          """[{"id": "e1", "projectId": "$PROJECT_ID", "timeInterval": {"start": "$start"}}]"""
+        )
+    )
+    server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+    val viewModel = TimerViewModel(repository, settingsStore, clock = { start.plusSeconds(5) })
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForText("00:00:05")
+    composeRule
+      .onNodeWithContentDescription(string(R.string.timer_refresh_button))
+      .assertIsEnabled()
+  }
+
+  @Test
+  fun `running state shows the entry description when present`() {
+    primeIdentity()
+    val start = Instant.parse("2026-07-31T09:00:00Z")
+    server.enqueue(
+      MockResponse()
+        .setBody(
+          """[{"id": "e1", "projectId": "$PROJECT_ID", "description": "Writing docs", """ +
+            """"timeInterval": {"start": "$start"}}]"""
+        )
+    )
+    server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+    val viewModel = TimerViewModel(repository, settingsStore, clock = { start.plusSeconds(5) })
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForText("00:00:05")
+    composeRule.onNodeWithText("Writing docs").assertExists()
+  }
+
+  @Test
+  fun `running state shows no description line when the entry description is blank`() {
+    primeIdentity()
+    val start = Instant.parse("2026-07-31T09:00:00Z")
+    server.enqueue(
+      MockResponse()
+        .setBody(
+          """[{"id": "e1", "projectId": "$PROJECT_ID", "description": "   ", """ +
+            """"timeInterval": {"start": "$start"}}]"""
+        )
+    )
+    server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+    val viewModel = TimerViewModel(repository, settingsStore, clock = { start.plusSeconds(5) })
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForText("00:00:05")
+    composeRule.onAllNodesWithText("   ").assertCountEquals(0)
+  }
+
+  @Test
+  fun `idle state shows an enabled settings button`() {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForContentDescription(string(R.string.timer_settings_button))
+    composeRule
+      .onNodeWithContentDescription(string(R.string.timer_settings_button))
+      .assertIsEnabled()
+  }
+
+  @Test
+  fun `clicking the settings button on the idle screen navigates to Settings`() {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+    var navigatedToSettings = false
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = { navigatedToSettings = true },
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForContentDescription(string(R.string.timer_settings_button))
+    composeRule.onNodeWithContentDescription(string(R.string.timer_settings_button)).performClick()
+
+    assertTrue(navigatedToSettings)
+  }
+
+  @Test
+  fun `running state shows an enabled settings button`() {
+    primeIdentity()
+    val start = Instant.parse("2026-07-31T09:00:00Z")
+    server.enqueue(
+      MockResponse()
+        .setBody(
+          """[{"id": "e1", "projectId": "$PROJECT_ID", "timeInterval": {"start": "$start"}}]"""
+        )
+    )
+    server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+    val viewModel = TimerViewModel(repository, settingsStore, clock = { start.plusSeconds(5) })
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForText("00:00:05")
+    composeRule
+      .onNodeWithContentDescription(string(R.string.timer_settings_button))
+      .assertIsEnabled()
+  }
+
+  @Test
+  fun `clicking the settings button on the running screen navigates to Settings`() {
+    primeIdentity()
+    val start = Instant.parse("2026-07-31T09:00:00Z")
+    server.enqueue(
+      MockResponse()
+        .setBody(
+          """[{"id": "e1", "projectId": "$PROJECT_ID", "timeInterval": {"start": "$start"}}]"""
+        )
+    )
+    server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+    val viewModel = TimerViewModel(repository, settingsStore, clock = { start.plusSeconds(5) })
+    var navigatedToSettings = false
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = { navigatedToSettings = true },
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForText("00:00:05")
+    composeRule.onNodeWithContentDescription(string(R.string.timer_settings_button)).performClick()
+
+    assertTrue(navigatedToSettings)
   }
 
   @Test

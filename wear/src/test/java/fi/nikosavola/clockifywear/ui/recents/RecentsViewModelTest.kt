@@ -1,5 +1,6 @@
 package fi.nikosavola.clockifywear.ui.recents
 
+import androidx.compose.ui.graphics.Color
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import fi.nikosavola.clockifywear.data.ClockifyError
 import fi.nikosavola.clockifywear.data.ClockifyRepository
@@ -34,6 +35,7 @@ private const val USER_ID = "5f8a1b2c3d4e5f6a7b8c9d0e"
 private const val API_KEY = "test-api-key"
 private const val PROJECT_ALPHA_ID = "5f8a1b2c3d4e5f6a7b8c9d21"
 private const val PROJECT_UNKNOWN_ID = "5f8a1b2c3d4e5f6a7b8c9d22"
+private const val PROJECT_BRAVO_ID = "5f8a1b2c3d4e5f6a7b8c9d23"
 private const val TASK_ID = "5f8a1b2c3d4e5f6a7b8c9d30"
 
 // Real (not virtual) wall-clock wait: long enough for a real localhost MockWebServer round trip
@@ -59,6 +61,10 @@ private fun entriesListJson(vararg entries: String): String =
 
 private fun projectsListJson(): String =
   """[{"id": "$PROJECT_ALPHA_ID", "name": "Alpha Project"}]"""
+
+private fun projectsListJsonWithColors(): String =
+  """[{"id": "$PROJECT_ALPHA_ID", "name": "Alpha Project", "color": "#1976D2"}, """ +
+    """{"id": "$PROJECT_BRAVO_ID", "name": "Bravo Project", "color": "not-a-color"}]"""
 
 @RunWith(RobolectricTestRunner::class)
 class RecentsViewModelTest {
@@ -123,6 +129,31 @@ class RecentsViewModelTest {
       assertEquals("Alpha Project", entries[0].projectName)
       assertEquals(PROJECT_UNKNOWN_ID, entries[1].projectName)
       assertTrue(entries.none { it.description == "projectless" })
+    }
+
+  @Test
+  fun `load resolves the matched project's color, falling back to null when unresolvable or malformed`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(
+        MockResponse()
+          .setBody(
+            entriesListJson(
+              timeEntryJson("e1", projectId = PROJECT_ALPHA_ID),
+              timeEntryJson("e2", projectId = PROJECT_BRAVO_ID),
+              timeEntryJson("e3", projectId = PROJECT_UNKNOWN_ID),
+            )
+          )
+      )
+      server.enqueue(MockResponse().setBody(projectsListJsonWithColors()))
+      val viewModel = RecentsViewModel(repository, settingsStore)
+
+      viewModel.load().join()
+
+      val entries = (viewModel.uiState.value as RecentsUiState.Loaded).entries
+      assertEquals(Color(red = 0x19, green = 0x76, blue = 0xD2), entries[0].projectColor)
+      assertNull(entries[1].projectColor) // matched project, malformed color string
+      assertNull(entries[2].projectColor) // unresolvable project
     }
 
   @Test

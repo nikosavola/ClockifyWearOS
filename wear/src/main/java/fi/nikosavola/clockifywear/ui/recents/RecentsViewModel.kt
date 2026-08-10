@@ -8,6 +8,7 @@ import fi.nikosavola.clockifywear.data.Settings
 import fi.nikosavola.clockifywear.data.SettingsStore
 import fi.nikosavola.clockifywear.data.api.dto.ProjectDto
 import fi.nikosavola.clockifywear.data.api.dto.TimeEntryDto
+import fi.nikosavola.clockifywear.ui.projects.parseProjectColor
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
@@ -75,11 +76,13 @@ class RecentsViewModel(
     val projects = resolveProjects()
     return restartable.map { entry ->
       val projectId = requireNotNull(entry.projectId)
+      val project = projects.firstOrNull { it.id == projectId }
       RecentEntryDisplay(
         projectId = projectId,
         taskId = entry.taskId,
         description = entry.description,
-        projectName = projects.firstOrNull { it.id == projectId }?.name ?: projectId,
+        projectName = project?.name ?: projectId,
+        projectColor = parseProjectColor(project?.color),
       )
     }
   }

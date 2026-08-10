@@ -9,6 +9,7 @@ import fi.nikosavola.clockifywear.data.api.createClockifyApi
 import fi.nikosavola.clockifywear.ui.projects.parseProjectColor
 import java.io.File
 import java.time.Instant
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -34,15 +35,28 @@ private const val USER_ID = "5f8a1b2c3d4e5f6a7b8c9d0e"
 private const val PROJECT_ID = "5f8a1b2c3d4e5f6a7b8c9d20"
 private const val TASK_ID = "5f8a1b2c3d4e5f6a7b8c9d30"
 private const val API_KEY = "test-api-key"
+// Long enough that the assertion below reliably lands before the response arrives, short enough
+// to not slow the suite down: this is a real (not virtual) delay, since MockWebServer's socket
+// round trip is real IO regardless of which dispatcher the test coroutine uses.
+private const val IN_FLIGHT_RESPONSE_DELAY_MS = 200L
 
-private fun timeEntryJson(id: String, start: String = "2026-07-31T09:00:00Z"): String =
-  """{"id": "$id", "projectId": "$PROJECT_ID", "timeInterval": {"start": "$start"}}"""
+private fun timeEntryJson(
+  id: String,
+  start: String = "2026-07-31T09:00:00Z",
+  description: String? = null,
+): String =
+  """{"id": "$id", "projectId": "$PROJECT_ID", "timeInterval": {"start": "$start"}""" +
+    (description?.let { ""","description": "$it"""" } ?: "") +
+    "}"
 
 // getRunningTimeEntry returns a List<TimeEntryDto> (0 or 1 elements); startTimeEntry/stopTimeEntry
 // return a single TimeEntryDto. Mixing these up parses fine as a list-of-one either way is wrong:
 // an unwrapped object here would fail to parse as a JSON array and surface a ParseError instead.
-private fun runningEntryListJson(id: String, start: String = "2026-07-31T09:00:00Z"): String =
-  "[${timeEntryJson(id, start)}]"
+private fun runningEntryListJson(
+  id: String,
+  start: String = "2026-07-31T09:00:00Z",
+  description: String? = null,
+): String = "[${timeEntryJson(id, start, description)}]"
 
 // viewModelScope runs on Dispatchers.Main; setMain(testDispatcher) plus runTest(testDispatcher)
 // share one virtual-time scheduler. Network/disk-bound actions are awaited with job.join() (a
@@ -207,6 +221,53 @@ class TimerViewModelTest {
     }
 
   @Test
+  fun `onForeground with a running entry populates description from the entry`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(
+        MockResponse().setBody(runningEntryListJson("running", description = "Writing docs"))
+      )
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+      val viewModel = TimerViewModel(repository, settingsStore)
+
+      viewModel.onForeground().join()
+
+      val state = viewModel.uiState.value
+      assertTrue(state is TimerUiState.Running)
+      assertEquals("Writing docs", (state as TimerUiState.Running).description)
+    }
+
+  @Test
+  fun `onForeground with a running entry with no description surfaces a null description`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(MockResponse().setBody(runningEntryListJson("running")))
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+      val viewModel = TimerViewModel(repository, settingsStore)
+
+      viewModel.onForeground().join()
+
+      val state = viewModel.uiState.value
+      assertTrue(state is TimerUiState.Running)
+      assertEquals(null, (state as TimerUiState.Running).description)
+    }
+
+  @Test
+  fun `onForeground with a running entry with a blank description surfaces a null description`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(MockResponse().setBody(runningEntryListJson("running", description = "   ")))
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+      val viewModel = TimerViewModel(repository, settingsStore)
+
+      viewModel.onForeground().join()
+
+      val state = viewModel.uiState.value
+      assertTrue(state is TimerUiState.Running)
+      assertEquals(null, (state as TimerUiState.Running).description)
+    }
+
+  @Test
   fun `stop transitions Running back to Idle`() =
     runTest(testDispatcher) {
       primeIdentity()
@@ -292,5 +353,45 @@ class TimerViewModelTest {
       val running = viewModel.uiState.value as TimerUiState.Running
       assertEquals(2L, running.elapsedSeconds)
       tickerJob.cancel()
+    }
+
+  @Test
+  fun `isRefreshing is true while a foreground load is in flight and false once it completes`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(
+        MockResponse()
+          .setBody("[]")
+          .setBodyDelay(IN_FLIGHT_RESPONSE_DELAY_MS, TimeUnit.MILLISECONDS)
+      )
+      val viewModel = TimerViewModel(repository, settingsStore)
+      assertEquals(false, viewModel.isRefreshing.value)
+
+      val job = viewModel.onForeground()
+      runCurrent() // runs the coroutine up to the real network suspension point
+      assertEquals(true, viewModel.isRefreshing.value)
+
+      job.join()
+      assertEquals(false, viewModel.isRefreshing.value)
+    }
+
+  @Test
+  fun `isRefreshing returns to false after a failed request, not just a successful one`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(
+        MockResponse()
+          .setResponseCode(500)
+          .setBodyDelay(IN_FLIGHT_RESPONSE_DELAY_MS, TimeUnit.MILLISECONDS)
+      )
+      val viewModel = TimerViewModel(repository, settingsStore)
+
+      val job = viewModel.onForeground()
+      runCurrent()
+      assertEquals(true, viewModel.isRefreshing.value)
+
+      job.join()
+      assertEquals(false, viewModel.isRefreshing.value)
+      assertTrue(viewModel.uiState.value is TimerUiState.Error)
     }
 }

@@ -16,6 +16,7 @@ sealed interface TimerUiState {
     val projectColor: Color?,
     val startInstant: Instant,
     val elapsedSeconds: Long,
+    val description: String?,
   ) : TimerUiState
 
   data class Error(val error: ClockifyError) : TimerUiState

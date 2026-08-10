@@ -1,5 +1,6 @@
 package fi.nikosavola.clockifywear.ui.recents
 
+import androidx.compose.ui.graphics.Color
 import fi.nikosavola.clockifywear.data.ClockifyError
 
 /** An entry displayable for one-tap restart; only entries with a non-null projectId qualify. */
@@ -8,6 +9,9 @@ data class RecentEntryDisplay(
   val taskId: String?,
   val description: String?,
   val projectName: String,
+  // Null for an unresolvable project or a malformed/missing color, same tolerant fallback as
+  // projectName; never lets a cosmetic color lookup fail the whole load.
+  val projectColor: Color? = null,
 )
 
 /** Per PLANNING.md "State management": one state per screen render, no partial/combined states. */
