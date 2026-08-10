@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -24,6 +25,7 @@ import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.TextButton
 import fi.nikosavola.clockifywear.R
 import fi.nikosavola.clockifywear.ui.errorMessage
 
@@ -66,6 +68,7 @@ private fun SignedInContent(state: SettingsUiState.SignedIn, onSignOut: () -> Un
 @Composable
 private fun SignedOutContent(state: SettingsUiState.SignedOut, onSignIn: (String) -> Unit) {
   var apiKeyInput by remember { mutableStateOf("") }
+  val clipboardManager = LocalClipboardManager.current
 
   state.error?.let { error -> Text(text = errorMessage(error)) }
   Text(text = stringResource(R.string.settings_api_key_label))
@@ -87,6 +90,14 @@ private fun SignedOutContent(state: SettingsUiState.SignedOut, onSignIn: (String
       MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
     cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
   )
+  // A watch's Wireless debugging pairing already implies a paired phone, and Wear OS syncs the
+  // system clipboard between them, so pasting a key copied on the phone works without any
+  // Data Layer code. Long-press-to-paste on BasicTextField is not reliably discoverable on a
+  // small round screen, so this button reads the clipboard directly as a visible alternative.
+  Text(text = stringResource(R.string.settings_clipboard_hint))
+  TextButton(onClick = { clipboardManager.getText()?.let { apiKeyInput = it.text } }) {
+    Text(text = stringResource(R.string.settings_paste_button))
+  }
   Button(onClick = { onSignIn(apiKeyInput) }, enabled = apiKeyInput.isNotBlank()) {
     Text(text = stringResource(R.string.settings_sign_in_button))
   }

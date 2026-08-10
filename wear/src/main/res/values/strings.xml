@@ -6,6 +6,8 @@
 
     <string name="settings_title">Settings</string>
     <string name="settings_api_key_label">API key</string>
+    <string name="settings_clipboard_hint">Tip: copy the key on your phone, then tap Paste. Your phone\'s clipboard syncs to this watch.</string>
+    <string name="settings_paste_button">Paste</string>
     <string name="settings_sign_in_button">Sign in</string>
     <string name="settings_sign_out_button">Sign out</string>
     <string name="settings_signing_in">Signing in...</string>

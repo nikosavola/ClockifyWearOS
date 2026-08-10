@@ -1,13 +1,17 @@
 package fi.nikosavola.clockifywear.ui.settings
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.test.core.app.ApplicationProvider
@@ -89,5 +93,19 @@ class SettingsScreenTest {
     composeRule.onNode(hasSetTextAction()).performTextInput("secret-key")
 
     composeRule.onNodeWithText(string(R.string.settings_sign_in_button)).assertIsEnabled()
+  }
+
+  @Test
+  fun `paste button fills the field from the system clipboard`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val systemClipboard = context.getSystemService(ClipboardManager::class.java)
+    systemClipboard.setPrimaryClip(ClipData.newPlainText("api key", "clipboard-key"))
+    val viewModel = SettingsViewModel(repository, settingsStore)
+    composeRule.setContent { SettingsScreen(viewModel = viewModel) }
+    waitForText(string(R.string.settings_api_key_label))
+
+    composeRule.onNodeWithText(string(R.string.settings_paste_button)).performClick()
+
+    composeRule.onNode(hasSetTextAction()).assertTextContains("clipboard-key")
   }
 }
