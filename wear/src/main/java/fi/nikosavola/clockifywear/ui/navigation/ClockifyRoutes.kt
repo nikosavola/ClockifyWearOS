@@ -7,4 +7,9 @@ package fi.nikosavola.clockifywear.ui.navigation
 object ClockifyRoutes {
   const val TIMER = "timer"
   const val SETTINGS = "settings"
+  const val PROJECT_PICKER = "projectPicker"
+  const val TASK_PICKER_PATTERN = "taskPicker/{projectId}"
+  const val RECENTS = "recents"
+
+  fun taskPicker(projectId: String) = "taskPicker/$projectId"
 }

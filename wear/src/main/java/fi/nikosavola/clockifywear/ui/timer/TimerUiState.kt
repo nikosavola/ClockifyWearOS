@@ -9,8 +9,12 @@ sealed interface TimerUiState {
 
   data class Idle(val hasDefaultProject: Boolean) : TimerUiState
 
-  data class Running(val projectId: String?, val startInstant: Instant, val elapsedSeconds: Long) :
-    TimerUiState
+  data class Running(
+    val projectId: String?,
+    val projectName: String?,
+    val startInstant: Instant,
+    val elapsedSeconds: Long,
+  ) : TimerUiState
 
   data class Error(val error: ClockifyError) : TimerUiState
 }

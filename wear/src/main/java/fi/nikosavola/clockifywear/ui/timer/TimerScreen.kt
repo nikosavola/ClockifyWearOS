@@ -19,13 +19,17 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.ScreenScaffold
 import androidx.wear.compose.material3.Text
+import androidx.wear.compose.material3.TextButton
 import fi.nikosavola.clockifywear.R
-import fi.nikosavola.clockifywear.data.ClockifyError
-import fi.nikosavola.clockifywear.ui.errorMessage
-import fi.nikosavola.clockifywear.ui.requiresSignIn
+import fi.nikosavola.clockifywear.ui.ErrorContent
 
 @Composable
-fun TimerScreen(viewModel: TimerViewModel, onNavigateToSettings: () -> Unit) {
+fun TimerScreen(
+  viewModel: TimerViewModel,
+  onNavigateToSettings: () -> Unit,
+  onNavigateToProjectPicker: () -> Unit,
+  onNavigateToRecents: () -> Unit,
+) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
   val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -50,7 +54,12 @@ fun TimerScreen(viewModel: TimerViewModel, onNavigateToSettings: () -> Unit) {
           Text(text = stringResource(R.string.loading))
         }
         is TimerUiState.Idle -> {
-          IdleContent(state = state, onStart = viewModel::start)
+          IdleContent(
+            state = state,
+            onStart = viewModel::start,
+            onChooseProject = onNavigateToProjectPicker,
+            onRecent = onNavigateToRecents,
+          )
         }
         is TimerUiState.Running -> {
           RunningContent(state = state, onStop = viewModel::stop)
@@ -68,31 +77,33 @@ fun TimerScreen(viewModel: TimerViewModel, onNavigateToSettings: () -> Unit) {
 }
 
 @Composable
-private fun IdleContent(state: TimerUiState.Idle, onStart: () -> Unit) {
+private fun IdleContent(
+  state: TimerUiState.Idle,
+  onStart: () -> Unit,
+  onChooseProject: () -> Unit,
+  onRecent: () -> Unit,
+) {
   if (state.hasDefaultProject) {
     Button(onClick = onStart) { Text(text = stringResource(R.string.timer_start_button)) }
+    // De-emphasized: switching the default project is secondary to starting the timer.
+    TextButton(onClick = onChooseProject) {
+      Text(text = stringResource(R.string.timer_choose_project_button))
+    }
   } else {
-    Text(text = stringResource(R.string.timer_no_default_project))
+    Button(onClick = onChooseProject) {
+      Text(text = stringResource(R.string.timer_choose_project_button))
+    }
   }
+  // Unlike "Choose project", restarting a recent entry is always a useful secondary action,
+  // whether or not a default project is set.
+  TextButton(onClick = onRecent) { Text(text = stringResource(R.string.timer_recent_button)) }
 }
 
 @Composable
 private fun RunningContent(state: TimerUiState.Running, onStop: () -> Unit) {
-  // Project name resolution needs the project cache lookup added in M3; showing the raw id (or a
-  // fallback label when the entry has none) is enough for M2's start/stop loop.
-  Text(text = state.projectId ?: stringResource(R.string.timer_no_project_label))
+  Text(
+    text = state.projectName ?: state.projectId ?: stringResource(R.string.timer_no_project_label)
+  )
   Text(text = formatElapsed(state.elapsedSeconds))
   Button(onClick = onStop) { Text(text = stringResource(R.string.timer_stop_button)) }
-}
-
-@Composable
-private fun ErrorContent(error: ClockifyError, onRetry: () -> Unit, onGoToSettings: () -> Unit) {
-  Text(text = errorMessage(error))
-  if (requiresSignIn(error)) {
-    Button(onClick = onGoToSettings) {
-      Text(text = stringResource(R.string.timer_go_to_settings_button))
-    }
-  } else {
-    Button(onClick = onRetry) { Text(text = stringResource(R.string.timer_retry_button)) }
-  }
 }

@@ -31,6 +31,7 @@ import org.robolectric.RobolectricTestRunner
 private const val WORKSPACE_ID = "5f8a1b2c3d4e5f6a7b8c9d10"
 private const val USER_ID = "5f8a1b2c3d4e5f6a7b8c9d0e"
 private const val PROJECT_ID = "5f8a1b2c3d4e5f6a7b8c9d20"
+private const val TASK_ID = "5f8a1b2c3d4e5f6a7b8c9d30"
 private const val API_KEY = "test-api-key"
 
 private fun timeEntryJson(id: String, start: String = "2026-07-31T09:00:00Z"): String =
@@ -80,10 +81,14 @@ class TimerViewModelTest {
     Dispatchers.resetMain()
   }
 
-  private suspend fun primeIdentity(defaultProjectId: String? = null) {
+  private suspend fun primeIdentity(
+    defaultProjectId: String? = null,
+    defaultTaskId: String? = null,
+  ) {
     settingsStore.setWorkspaceId(WORKSPACE_ID)
     settingsStore.setUserId(USER_ID)
     if (defaultProjectId != null) settingsStore.setDefaultProjectId(defaultProjectId)
+    if (defaultTaskId != null) settingsStore.setDefaultTaskId(defaultTaskId)
   }
 
   @Test
@@ -109,6 +114,7 @@ class TimerViewModelTest {
       server.enqueue(
         MockResponse().setBody(runningEntryListJson("running", start = start.toString()))
       )
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
       val viewModel = TimerViewModel(repository, settingsStore, clock = { now })
 
       viewModel.onForeground().join()
@@ -120,10 +126,43 @@ class TimerViewModelTest {
     }
 
   @Test
+  fun `onForeground with a running entry resolves the project name from the projects list`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(MockResponse().setBody(runningEntryListJson("running")))
+      server.enqueue(MockResponse().setBody("""[{"id": "$PROJECT_ID", "name": "Website"}]"""))
+      val viewModel = TimerViewModel(repository, settingsStore)
+
+      viewModel.onForeground().join()
+
+      val state = viewModel.uiState.value
+      assertTrue(state is TimerUiState.Running)
+      assertEquals(PROJECT_ID, (state as TimerUiState.Running).projectId)
+      assertEquals("Website", state.projectName)
+    }
+
+  @Test
+  fun `onForeground with a running entry tolerates a failed project-name lookup`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(MockResponse().setBody(runningEntryListJson("running")))
+      server.enqueue(MockResponse().setResponseCode(500))
+      val viewModel = TimerViewModel(repository, settingsStore)
+
+      viewModel.onForeground().join()
+
+      val state = viewModel.uiState.value
+      assertTrue(state is TimerUiState.Running)
+      assertEquals(PROJECT_ID, (state as TimerUiState.Running).projectId)
+      assertEquals(null, state.projectName)
+    }
+
+  @Test
   fun `stop transitions Running back to Idle`() =
     runTest(testDispatcher) {
       primeIdentity()
       server.enqueue(MockResponse().setBody(runningEntryListJson("running")))
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
       val viewModel = TimerViewModel(repository, settingsStore)
       viewModel.onForeground().join()
       assertTrue(viewModel.uiState.value is TimerUiState.Running)
@@ -163,6 +202,22 @@ class TimerViewModelTest {
     }
 
   @Test
+  fun `start sends the default task id along with the default project id`() =
+    runTest(testDispatcher) {
+      primeIdentity(defaultProjectId = PROJECT_ID, defaultTaskId = TASK_ID)
+      server.enqueue(MockResponse().setResponseCode(404)) // stop: nothing was running
+      server.enqueue(MockResponse().setBody(timeEntryJson("new-entry")))
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+      val viewModel = TimerViewModel(repository, settingsStore)
+
+      viewModel.start().join()
+
+      server.takeRequest() // the stop-first request; not under test here
+      val startRequest = server.takeRequest()
+      assertTrue(startRequest.body.readUtf8().contains(""""taskId":"$TASK_ID""""))
+    }
+
+  @Test
   fun `runElapsedTicker advances elapsed using virtual time, not real sleeps`() =
     runTest(testDispatcher) {
       primeIdentity()
@@ -170,6 +225,7 @@ class TimerViewModelTest {
       server.enqueue(
         MockResponse().setBody(runningEntryListJson("running", start = start.toString()))
       )
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
       val viewModel =
         TimerViewModel(
           repository,

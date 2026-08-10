@@ -52,9 +52,13 @@ class TimerViewModel(
 
   fun start(): Job = viewModelScope.launch {
     settingsPrimed.await()
-    val defaultProjectId = settingsStore.currentSettings().defaultProjectId
+    val settings = settingsStore.currentSettings()
+    val defaultProjectId = settings.defaultProjectId
     if (defaultProjectId != null) {
-      when (val result = repository.startTimer(projectId = defaultProjectId)) {
+      when (
+        val result =
+          repository.startTimer(projectId = defaultProjectId, taskId = settings.defaultTaskId)
+      ) {
         is ClockifyResult.Success -> applyEntry(result.value)
         is ClockifyResult.Failure -> mutableUiState.value = TimerUiState.Error(result.error)
       }
@@ -105,9 +109,19 @@ class TimerViewModel(
       } else {
         TimerUiState.Running(
           projectId = entry.projectId,
+          projectName = entry.projectId?.let { resolveProjectName(it) },
           startInstant = entry.timeInterval.start,
           elapsedSeconds = Duration.between(entry.timeInterval.start, clock()).seconds,
         )
       }
   }
+
+  // Cosmetic-only lookup: a failed or unresolved name must never turn an otherwise-successful
+  // running-entry fetch into an error state, same tolerance as
+  // TaskPickerViewModel.resolveProjectName.
+  private suspend fun resolveProjectName(projectId: String): String? =
+    when (val result = repository.projects()) {
+      is ClockifyResult.Success -> result.value.firstOrNull { it.id == projectId }?.name
+      is ClockifyResult.Failure -> null
+    }
 }

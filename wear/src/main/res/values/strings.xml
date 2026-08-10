@@ -15,10 +15,19 @@
 
     <string name="timer_start_button">Start</string>
     <string name="timer_stop_button">Stop</string>
-    <string name="timer_no_default_project">No default project set. Choose one in the Clockify web app.</string>
     <string name="timer_no_project_label">No project</string>
     <string name="timer_go_to_settings_button">Go to Settings</string>
     <string name="timer_retry_button">Retry</string>
+    <string name="timer_choose_project_button">Choose project</string>
+    <string name="timer_recent_button">Recent</string>
+
+    <string name="project_picker_title">Choose project</string>
+    <string name="project_picker_empty">No projects found. Add one in the Clockify web app.</string>
+
+    <string name="task_picker_no_task_option">No specific task</string>
+
+    <string name="recents_title">Recent entries</string>
+    <string name="recents_empty">No recent entries yet.</string>
 
     <string name="error_unauthorized">Invalid API key. Please sign in again.</string>
     <string name="error_rate_limited">Clockify is rate limiting requests. Try again shortly.</string>

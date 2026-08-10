@@ -2,6 +2,8 @@ package fi.nikosavola.clockifywear.ui.timer
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -65,9 +67,10 @@ class TimerScreenTest {
     server.shutdown()
   }
 
-  private fun primeIdentity() = runBlocking {
+  private fun primeIdentity(defaultProjectId: String? = null) = runBlocking {
     settingsStore.setWorkspaceId(WORKSPACE_ID)
     settingsStore.setUserId(USER_ID)
+    if (defaultProjectId != null) settingsStore.setDefaultProjectId(defaultProjectId)
   }
 
   private fun string(@StringRes resId: Int): String =
@@ -80,14 +83,41 @@ class TimerScreenTest {
   }
 
   @Test
-  fun `idle state without a default project shows the no-default-project message`() {
+  fun `idle state without a default project shows a choose-project button`() {
     primeIdentity()
     server.enqueue(MockResponse().setBody("[]"))
     val viewModel = TimerViewModel(repository, settingsStore)
 
-    composeRule.setContent { TimerScreen(viewModel = viewModel, onNavigateToSettings = {}) }
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
 
-    waitForText(string(R.string.timer_no_default_project))
+    waitForText(string(R.string.timer_choose_project_button))
+    composeRule.onNodeWithText(string(R.string.timer_choose_project_button)).assertIsEnabled()
+  }
+
+  @Test
+  fun `idle state with a default project also shows a choose-project button`() {
+    primeIdentity(defaultProjectId = PROJECT_ID)
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForText(string(R.string.timer_start_button))
+    composeRule.onNodeWithText(string(R.string.timer_choose_project_button)).assertIsEnabled()
   }
 
   @Test
@@ -100,13 +130,47 @@ class TimerScreenTest {
           """[{"id": "e1", "projectId": "$PROJECT_ID", "timeInterval": {"start": "$start"}}]"""
         )
     )
+    server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
     // A fixed clock (not tied to test wall time) keeps the ticked display stable for assertion.
     val viewModel = TimerViewModel(repository, settingsStore, clock = { start.plusSeconds(5) })
 
-    composeRule.setContent { TimerScreen(viewModel = viewModel, onNavigateToSettings = {}) }
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
 
     waitForText("00:00:05")
     composeRule.onNodeWithText(string(R.string.timer_stop_button)).assertExists()
+  }
+
+  @Test
+  fun `running state shows the resolved project name, not the raw id`() {
+    primeIdentity()
+    val start = Instant.parse("2026-07-31T09:00:00Z")
+    server.enqueue(
+      MockResponse()
+        .setBody(
+          """[{"id": "e1", "projectId": "$PROJECT_ID", "timeInterval": {"start": "$start"}}]"""
+        )
+    )
+    server.enqueue(MockResponse().setBody("""[{"id": "$PROJECT_ID", "name": "Website"}]"""))
+    val viewModel = TimerViewModel(repository, settingsStore, clock = { start.plusSeconds(5) })
+
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
+
+    waitForText("Website")
+    composeRule.onAllNodesWithText(PROJECT_ID).assertCountEquals(0)
   }
 
   @Test
@@ -115,7 +179,14 @@ class TimerScreenTest {
     server.enqueue(MockResponse().setResponseCode(401))
     val viewModel = TimerViewModel(repository, settingsStore)
 
-    composeRule.setContent { TimerScreen(viewModel = viewModel, onNavigateToSettings = {}) }
+    composeRule.setContent {
+      TimerScreen(
+        viewModel = viewModel,
+        onNavigateToSettings = {},
+        onNavigateToProjectPicker = {},
+        onNavigateToRecents = {},
+      )
+    }
 
     waitForText(string(R.string.error_unauthorized))
     composeRule.onNodeWithText(string(R.string.timer_go_to_settings_button)).assertExists()
