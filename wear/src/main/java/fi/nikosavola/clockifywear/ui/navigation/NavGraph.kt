@@ -63,6 +63,7 @@ private fun TimerDestination(appContainer: AppContainer, navController: NavHostC
               repository = appContainer.repository,
               settingsStore = appContainer.settingsStore,
               settingsPrimed = appContainer.settingsPrimed,
+              onRunningStateChanged = appContainer.ongoingTimerNotifier::onTimerStateChanged,
             )
           }
         }

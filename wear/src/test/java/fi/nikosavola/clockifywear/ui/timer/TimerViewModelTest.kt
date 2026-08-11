@@ -394,4 +394,65 @@ class TimerViewModelTest {
       assertEquals(false, viewModel.isRefreshing.value)
       assertTrue(viewModel.uiState.value is TimerUiState.Error)
     }
+
+  @Test
+  fun `onForeground with a running entry notifies onRunningStateChanged with the Running state`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(MockResponse().setBody(runningEntryListJson("running")))
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+      val states = mutableListOf<TimerUiState>()
+      val viewModel = TimerViewModel(repository, settingsStore, onRunningStateChanged = states::add)
+
+      viewModel.onForeground().join()
+
+      assertEquals(1, states.size)
+      assertTrue(states.single() is TimerUiState.Running)
+    }
+
+  @Test
+  fun `stop notifies onRunningStateChanged with the Idle state`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(MockResponse().setBody(runningEntryListJson("running")))
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+      val states = mutableListOf<TimerUiState>()
+      val viewModel = TimerViewModel(repository, settingsStore, onRunningStateChanged = states::add)
+      viewModel.onForeground().join()
+      assertEquals(1, states.size)
+
+      server.enqueue(MockResponse().setBody(timeEntryJson("stopped")))
+      viewModel.stop().join()
+
+      assertEquals(2, states.size)
+      assertTrue(states.last() is TimerUiState.Idle)
+    }
+
+  @Test
+  fun `runElapsedTicker ticks do not notify onRunningStateChanged again`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      val start = Instant.parse("2026-07-31T09:00:00Z")
+      server.enqueue(
+        MockResponse().setBody(runningEntryListJson("running", start = start.toString()))
+      )
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+      val states = mutableListOf<TimerUiState>()
+      val viewModel =
+        TimerViewModel(
+          repository,
+          settingsStore,
+          clock = { start.plusMillis(testScheduler.currentTime) },
+          onRunningStateChanged = states::add,
+        )
+      viewModel.onForeground().join()
+      assertEquals(1, states.size)
+
+      val tickerJob = launch { viewModel.runElapsedTicker() }
+      advanceTimeBy(3_500)
+      runCurrent()
+
+      assertEquals(1, states.size)
+      tickerJob.cancel()
+    }
 }

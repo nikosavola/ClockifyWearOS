@@ -32,12 +32,17 @@ private const val TICK_INTERVAL_MS = 1_000L
  *   [fi.nikosavola.clockifywear.di.AppContainer] for why. Defaults to an already-completed
  *   [Deferred] so tests that don't care about priming don't need to construct one.
  * @param clock injectable so elapsed-time tests use virtual instants, not the wall clock.
+ * @param onRunningStateChanged notified once per [applyEntry] call, not from [runElapsedTicker]:
+ *   the ongoing-activity notification's stopwatch text is ticked by the system itself from its
+ *   start time, so calling this every second would be wasteful and can cause visible notification
+ *   flicker.
  */
 class TimerViewModel(
   private val repository: ClockifyRepository,
   private val settingsStore: SettingsStore,
   private val settingsPrimed: Deferred<Settings> = CompletableDeferred(Settings()),
   private val clock: () -> Instant = Instant::now,
+  private val onRunningStateChanged: (TimerUiState) -> Unit = {},
 ) : ViewModel() {
   private val mutableUiState = MutableStateFlow<TimerUiState>(TimerUiState.Loading)
   val uiState: StateFlow<TimerUiState> = mutableUiState.asStateFlow()
@@ -129,6 +134,7 @@ class TimerViewModel(
           description = entry.description?.takeIf { it.isNotBlank() },
         )
       }
+    onRunningStateChanged(mutableUiState.value)
   }
 
   // Cosmetic-only lookup: a failed or unresolved project must never turn an otherwise-successful
