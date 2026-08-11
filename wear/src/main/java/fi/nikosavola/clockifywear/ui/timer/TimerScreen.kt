@@ -168,13 +168,29 @@ fun TimerScreen(
 
   val listState = rememberTransformingLazyColumnState()
   val state = uiState
+  // Settings has no persistent button anymore, reachable only by this swipe, scoped to Idle/Running
+  // exactly like TopButtonRow/the EdgeButton (not Loading/Error). Attached to this outer Box, not
+  // to
+  // TimerContent's own Column below: the ElapsedTimeOverlay added alongside it for Running is a
+  // sibling that visually sits on top of (part of) that Column at the screen's vertical center, and
+  // a plain Text with no gesture handler of its own still wins Compose's hit-test for touches
+  // landing on it, silently swallowing them before they would ever reach a sibling's pointerInput
+  // underneath - swiping through that band stopped reaching TimerContent's gesture detector
+  // entirely once the overlay was introduced. A pointerInput attached directly to this Box, which
+  // both of them are inside rather than beside, does not have that problem.
+  val swipeModifier =
+    if (state is TimerUiState.Idle || state is TimerUiState.Running) {
+      Modifier.swipeToSettings(onNavigateToSettings)
+    } else {
+      Modifier
+    }
   // The elapsed-time readout (and, when present, the description below it) are rendered as an
   // overlay on this outer Box rather than inside ScreenScaffold's own content slot below: that
   // slot's coordinate space starts after ScreenScaffold's contentPadding (reserved for the
   // status area above and the EdgeButton below), which are unequal, so centering within it does
   // not land at the screen's actual vertical center - only this Box, sized to the raw screen
   // before any of that padding, can guarantee that regardless of what else is on screen.
-  Box(modifier = Modifier.fillMaxSize()) {
+  Box(modifier = Modifier.fillMaxSize().then(swipeModifier)) {
     ScreenScaffold(
       scrollState = listState,
       // Only Idle and Running anchor an action to the bezel; Loading/Error fall through to the
@@ -305,18 +321,7 @@ private fun TimerContent(
   onRefresh: () -> Unit,
   onGoToSettings: () -> Unit,
 ) {
-  // Settings has no persistent button anymore, reachable only by this swipe, scoped to Idle/Running
-  // exactly like TopButtonRow/the EdgeButton (not Loading/Error).
-  val swipeModifier =
-    if (state is TimerUiState.Idle || state is TimerUiState.Running) {
-      Modifier.swipeToSettings(onGoToSettings)
-    } else {
-      Modifier
-    }
-  Column(
-    modifier = Modifier.fillMaxWidth().then(swipeModifier),
-    horizontalAlignment = Alignment.CenterHorizontally,
-  ) {
+  Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
     when (state) {
       is TimerUiState.Loading -> Text(text = stringResource(R.string.loading))
       is TimerUiState.Idle ->
