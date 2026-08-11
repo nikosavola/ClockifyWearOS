@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
   private val repository: ClockifyRepository,
   private val settingsStore: SettingsStore,
+  private val onSignedOut: () -> Unit = {},
 ) : ViewModel() {
   private val mutableUiState = MutableStateFlow<SettingsUiState>(SettingsUiState.Loading)
   val uiState: StateFlow<SettingsUiState> = mutableUiState.asStateFlow()
@@ -42,6 +43,10 @@ class SettingsViewModel(
 
   fun signOut(): Job = viewModelScope.launch {
     settingsStore.clear()
+    // Cancels any orphaned ongoing-activity notification: after sign-out, TimerViewModel's next
+    // loadRunning() 401s straight to Error rather than through applyEntry(), so
+    // onTimerStateChanged would never fire again to clear it otherwise.
+    onSignedOut()
     mutableUiState.value = SettingsUiState.SignedOut()
   }
 

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +20,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.password
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -97,12 +101,16 @@ private fun SignedOutContent(state: SettingsUiState.SignedOut, onSignIn: (String
       Modifier.fillMaxWidth()
         .padding(horizontal = 8.dp)
         .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.small)
-        .padding(8.dp),
+        .padding(8.dp)
+        .semantics { password() },
     singleLine = true,
     textStyle =
       MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
     cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
     visualTransformation = PasswordVisualTransformation(),
+    // Marks this as a password field for the system IME too, so it does not offer autocorrect or
+    // learn the typed value into the personal dictionary.
+    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
   )
   // A watch's Wireless debugging pairing already implies a paired phone, and Wear OS syncs the
   // system clipboard between them, so pasting a key copied on the phone works without any

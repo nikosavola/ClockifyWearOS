@@ -2,9 +2,11 @@ package fi.nikosavola.clockifywear.notification
 
 import android.Manifest
 import android.app.Application
+import android.app.Notification
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
 import androidx.test.core.app.ApplicationProvider
+import fi.nikosavola.clockifywear.R
 import fi.nikosavola.clockifywear.ui.timer.TimerUiState
 import java.time.Instant
 import org.junit.Assert.assertEquals
@@ -31,15 +33,24 @@ class OngoingTimerNotifierTest {
     notifier = OngoingTimerNotifier(context)
   }
 
-  private fun runningState(startInstant: Instant = Instant.parse("2026-07-31T09:00:00Z")) =
+  private fun runningState(
+    startInstant: Instant = Instant.parse("2026-07-31T09:00:00Z"),
+    projectName: String? = "Website",
+  ) =
     TimerUiState.Running(
       projectId = PROJECT_ID,
-      projectName = "Website",
+      projectName = projectName,
       projectColor = null,
       startInstant = startInstant,
       elapsedSeconds = 0,
       description = null,
     )
+
+  private fun activeNotificationTitle(): String? {
+    val active = NotificationManagerCompat.from(context).activeNotifications
+    val notification = active.single().notification
+    return notification.extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString()
+  }
 
   @Test
   fun `Running state posts an active notification`() {
@@ -55,6 +66,42 @@ class OngoingTimerNotifierTest {
     assertEquals(1, NotificationManagerCompat.from(context).activeNotifications.size)
 
     notifier.onTimerStateChanged(TimerUiState.Idle(hasDefaultProject = false))
+
+    assertTrue(NotificationManagerCompat.from(context).activeNotifications.isEmpty())
+  }
+
+  @Test
+  fun `Running state with a project name shows it as the notification title`() {
+    notifier.onTimerStateChanged(runningState(projectName = "Website"))
+
+    assertEquals("Website", activeNotificationTitle())
+  }
+
+  @Test
+  fun `Running state with no project name falls back to the generic title`() {
+    notifier.onTimerStateChanged(runningState(projectName = null))
+
+    assertEquals(
+      context.getString(R.string.notification_timer_running_title),
+      activeNotificationTitle(),
+    )
+  }
+
+  @Test
+  fun `two consecutive Running updates leave exactly one active notification`() {
+    val start = Instant.parse("2026-07-31T09:00:00Z")
+
+    notifier.onTimerStateChanged(runningState(startInstant = start))
+    notifier.onTimerStateChanged(runningState(startInstant = start.plusSeconds(60)))
+
+    assertEquals(1, NotificationManagerCompat.from(context).activeNotifications.size)
+  }
+
+  @Test
+  fun `Running state without POST_NOTIFICATIONS granted does not throw and posts nothing`() {
+    shadowOf(context as Application).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
+
+    notifier.onTimerStateChanged(runningState())
 
     assertTrue(NotificationManagerCompat.from(context).activeNotifications.isEmpty())
   }

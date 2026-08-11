@@ -86,6 +86,7 @@ private fun SettingsDestination(appContainer: AppContainer) {
             SettingsViewModel(
               repository = appContainer.repository,
               settingsStore = appContainer.settingsStore,
+              onSignedOut = appContainer.ongoingTimerNotifier::cancel,
             )
           }
         }

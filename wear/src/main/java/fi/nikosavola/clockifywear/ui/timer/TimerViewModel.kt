@@ -13,6 +13,7 @@ import java.time.Duration
 import java.time.Instant
 import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -52,6 +53,11 @@ class TimerViewModel(
   private val mutableIsRefreshing = MutableStateFlow(false)
   val isRefreshing: StateFlow<Boolean> = mutableIsRefreshing.asStateFlow()
 
+  // Shared by start()/stop(): a double-tap on the EdgeButton within one network round trip would
+  // otherwise fire two real requests, and the second one, hitting an already-resolved server-side
+  // state, can return a failure that overwrites a successful outcome with an Error state.
+  private var actionJob: Job? = null
+
   /**
    * Called from the screen's lifecycle-scoped collection site on every foreground. Returns the
    * launched [Job] so tests can `join()` it: a real suspension, unlike
@@ -62,28 +68,49 @@ class TimerViewModel(
 
   fun retry(): Job = onForeground()
 
-  fun start(): Job = viewModelScope.launch {
-    settingsPrimed.await()
-    val settings = settingsStore.currentSettings()
-    val defaultProjectId = settings.defaultProjectId
-    if (defaultProjectId != null) {
-      when (
-        val result =
-          repository.startTimer(projectId = defaultProjectId, taskId = settings.defaultTaskId)
-      ) {
-        is ClockifyResult.Success -> applyEntry(result.value)
-        is ClockifyResult.Failure -> mutableUiState.value = TimerUiState.Error(result.error)
+  fun start(): Job {
+    actionJob?.let { if (it.isActive) return it }
+    // LAZY, plus assigning actionJob before start(): on viewModelScope's real dispatcher
+    // (Dispatchers.Main.immediate) an eagerly-launched coroutine runs synchronously up to its
+    // first suspension point *inside* launch()'s call, before a trailing `.also { actionJob = it
+    // }` would ever run - which would leave actionJob unset while the network call for this very
+    // start() is already in flight, wide open for a same-instant double-tap. Starting lazily
+    // guarantees the field is written before the body gets a chance to run at all.
+    val job =
+      viewModelScope.launch(start = CoroutineStart.LAZY) {
+        settingsPrimed.await()
+        val settings = settingsStore.currentSettings()
+        val defaultProjectId = settings.defaultProjectId
+        if (defaultProjectId != null) {
+          when (
+            val result =
+              repository.startTimer(projectId = defaultProjectId, taskId = settings.defaultTaskId)
+          ) {
+            is ClockifyResult.Success -> applyEntry(result.value)
+            is ClockifyResult.Failure -> mutableUiState.value = TimerUiState.Error(result.error)
+          }
+        } else {
+          mutableUiState.value = TimerUiState.Idle(hasDefaultProject = false)
+        }
       }
-    } else {
-      mutableUiState.value = TimerUiState.Idle(hasDefaultProject = false)
-    }
+    actionJob = job
+    job.start()
+    return job
   }
 
-  fun stop(): Job = viewModelScope.launch {
-    when (val result = repository.stopTimer()) {
-      is ClockifyResult.Success -> applyEntry(null)
-      is ClockifyResult.Failure -> mutableUiState.value = TimerUiState.Error(result.error)
-    }
+  fun stop(): Job {
+    actionJob?.let { if (it.isActive) return it }
+    // See start()'s comment on why this is LAZY and assigned before start().
+    val job =
+      viewModelScope.launch(start = CoroutineStart.LAZY) {
+        when (val result = repository.stopTimer()) {
+          is ClockifyResult.Success -> applyEntry(null)
+          is ClockifyResult.Failure -> mutableUiState.value = TimerUiState.Error(result.error)
+        }
+      }
+    actionJob = job
+    job.start()
+    return job
   }
 
   /**

@@ -157,4 +157,18 @@ class SettingsViewModelTest {
       assertTrue(state is SettingsUiState.SignedOut)
       assertNull(settingsStore.currentSettings().apiKey)
     }
+
+  @Test
+  fun `signOut invokes onSignedOut exactly once`() =
+    runTest(testDispatcher) {
+      settingsStore.setWorkspaceId(WORKSPACE_ID)
+      var signedOutCount = 0
+      val viewModel =
+        SettingsViewModel(repository, settingsStore, onSignedOut = { signedOutCount++ })
+      viewModel.load().join()
+
+      viewModel.signOut().join()
+
+      assertEquals(1, signedOutCount)
+    }
 }

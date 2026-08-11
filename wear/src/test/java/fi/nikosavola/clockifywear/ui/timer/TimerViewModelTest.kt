@@ -284,6 +284,33 @@ class TimerViewModelTest {
     }
 
   @Test
+  fun `calling stop twice back-to-back makes only one request and does not surface Error`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      server.enqueue(MockResponse().setBody(runningEntryListJson("running")))
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+      val viewModel = TimerViewModel(repository, settingsStore)
+      viewModel.onForeground().join()
+      assertTrue(viewModel.uiState.value is TimerUiState.Running)
+      val requestCountBeforeStop = server.requestCount
+
+      server.enqueue(MockResponse().setBody(timeEntryJson("stopped")))
+      val firstJob = viewModel.stop()
+      // Lets the first call's coroutine body actually run up to its network suspension point
+      // before the second call arrives, the case the guard exists for: on a real device
+      // (Dispatchers.Main.immediate) the body starts executing inside stop() itself, before the
+      // guard's own bookkeeping is written, so a bare back-to-back call without this would not
+      // exercise the same race a real double-tap does.
+      runCurrent()
+      val secondJob = viewModel.stop()
+      firstJob.join()
+      secondJob.join()
+
+      assertEquals(1, server.requestCount - requestCountBeforeStop)
+      assertTrue(viewModel.uiState.value is TimerUiState.Idle)
+    }
+
+  @Test
   fun `unauthorized surfaces the auth error state`() =
     runTest(testDispatcher) {
       primeIdentity()
