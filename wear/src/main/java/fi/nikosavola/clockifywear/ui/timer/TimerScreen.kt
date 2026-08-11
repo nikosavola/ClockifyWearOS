@@ -21,11 +21,14 @@ import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellati
 import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
@@ -37,7 +40,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -46,6 +48,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.pointerInput
@@ -80,6 +83,12 @@ import kotlinx.coroutines.launch
 
 private val PROJECT_LABEL_ROW_GAP = 4.dp
 private val ICON_BUTTON_ROW_GAP = 12.dp
+// Extra breathing room between the project-name row and the (independently, always-centered)
+// elapsed-time number below it - see the comment on RunningContent's Row for why this is a visual
+// offset rather than ordinary layout spacing. Must stay comfortably below TOP_BUTTON_ROW_GAP (8dp):
+// this shifts the row up from its normal position, and going much past that gap would run it into
+// the refresh button above, which does not move.
+private val PROJECT_LABEL_CENTER_GAP = 6.dp
 
 // material-icons-core is not on this module's classpath (confirmed via
 // `./gradlew :wear:dependencies`, contrary to what was assumed going into this change) and
@@ -100,10 +109,12 @@ private val PAUSE_BAR_WIDTH = 6.dp
 private val PAUSE_BAR_GAP = 5.dp
 private val PAUSE_BAR_CORNER = 1.5.dp
 private val LIST_BAR_HEIGHT = 3.dp
-// Thicker than a typical 24dp glyph would need, and with a blunter arrowhead (shorter, wider)
-// than a scaled-down default: at ExtraSmallButtonSize with no tonal fill behind it, a thin
-// stroke and a long thin arrowhead both read as a faint smudge rather than a refresh symbol.
-private val REFRESH_STROKE_WIDTH = 3.5.dp
+// Thinner than a typical 24dp glyph's default stroke would be, to read as a light utility icon
+// rather than a bold peer of the other icon buttons on this screen - but not razor-thin, since at
+// ExtraSmallButtonSize with no tonal fill behind it a too-thin stroke reads as a faint smudge
+// rather than a refresh symbol. The arrowhead scales off this via REFRESH_ARROW_*_FACTOR, so it
+// thins along with the arc.
+private val REFRESH_STROKE_WIDTH = 2.5.dp
 private const val REFRESH_START_ANGLE_DEGREES = -50f
 private const val REFRESH_SWEEP_ANGLE_DEGREES = 260f
 private const val REFRESH_ARROW_LENGTH_FACTOR = 1.4f
@@ -157,40 +168,72 @@ fun TimerScreen(
 
   val listState = rememberTransformingLazyColumnState()
   val state = uiState
-  ScreenScaffold(
-    scrollState = listState,
-    // Only Idle and Running anchor an action to the bezel; Loading/Error fall through to the
-    // default (no edge button).
-    edgeButton = {
-      TimerEdgeButton(
-        state = state,
-        onStart = viewModel::start,
-        onStop = viewModel::stop,
-        onChooseProject = onNavigateToProjectPicker,
-      )
-    },
-  ) { contentPadding ->
-    TransformingLazyColumn(
-      state = listState,
-      contentPadding = contentPadding,
-      // The content is a single fixed block that never fills the viewport, so centering it here
-      // (rather than on the item, which wrap-heights and makes Arrangement.Center a no-op)
-      // matches the old fillMaxSize+Center Column this screen used before the EdgeButton rework.
-      verticalArrangement = Arrangement.Center,
-      horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-      item {
-        TimerContent(
+  // The elapsed-time readout (and, when present, the description below it) are rendered as an
+  // overlay on this outer Box rather than inside ScreenScaffold's own content slot below: that
+  // slot's coordinate space starts after ScreenScaffold's contentPadding (reserved for the
+  // status area above and the EdgeButton below), which are unequal, so centering within it does
+  // not land at the screen's actual vertical center - only this Box, sized to the raw screen
+  // before any of that padding, can guarantee that regardless of what else is on screen.
+  Box(modifier = Modifier.fillMaxSize()) {
+    ScreenScaffold(
+      scrollState = listState,
+      // Only Idle and Running anchor an action to the bezel; Loading/Error fall through to the
+      // default (no edge button).
+      edgeButton = {
+        TimerEdgeButton(
           state = state,
-          isRefreshing = isRefreshing,
+          onStart = viewModel::start,
+          onStop = viewModel::stop,
           onChooseProject = onNavigateToProjectPicker,
-          onRecent = onNavigateToRecents,
-          onRetry = viewModel::retry,
-          onRefresh = viewModel::retry,
-          onGoToSettings = onNavigateToSettings,
         )
+      },
+    ) { contentPadding ->
+      TransformingLazyColumn(
+        state = listState,
+        contentPadding = contentPadding,
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally,
+      ) {
+        item {
+          TimerContent(
+            state = state,
+            isRefreshing = isRefreshing,
+            onChooseProject = onNavigateToProjectPicker,
+            onRecent = onNavigateToRecents,
+            onRetry = viewModel::retry,
+            onRefresh = viewModel::retry,
+            onGoToSettings = onNavigateToSettings,
+          )
+        }
       }
     }
+    if (state is TimerUiState.Running) {
+      ElapsedTimeOverlay(state)
+    }
+  }
+}
+
+// See TimerScreen's outer Box comment for why this lives at the screen level, aligned within that
+// full-screen Box, instead of inside RunningContent/ScreenScaffold's own content slot.
+@Composable
+private fun BoxScope.ElapsedTimeOverlay(state: TimerUiState.Running) {
+  Text(
+    text = formatElapsed(state.elapsedSeconds),
+    modifier = Modifier.fillMaxWidth().align(Alignment.Center),
+    style =
+      MaterialTheme.typography.numeralLarge.copy(
+        fontFeatureSettings = "tnum",
+        fontFamily = FontFamily.Monospace,
+      ),
+    textAlign = TextAlign.Center,
+  )
+  if (!state.description.isNullOrBlank()) {
+    Text(
+      text = state.description,
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+      modifier = Modifier.align(Alignment.BottomCenter),
+    )
   }
 }
 
@@ -227,7 +270,13 @@ private fun TimerEdgeButton(
       onClick()
     }
   ) {
-    Box(modifier = Modifier.scale(pressScale.value)) {
+    Box(
+      modifier =
+        Modifier.graphicsLayer {
+          scaleX = pressScale.value
+          scaleY = pressScale.value
+        }
+    ) {
       AnimatedContent(
         targetState = state is TimerUiState.Running,
         transitionSpec = {
@@ -277,6 +326,8 @@ private fun TimerContent(
           onRecent = onRecent,
           onRefresh = onRefresh,
         )
+      // The elapsed-time text and description render as a screen-level overlay in TimerScreen,
+      // not here - see the comment on TimerScreen's outer Box for why.
       is TimerUiState.Running ->
         RunningContent(state = state, isRefreshing = isRefreshing, onRefresh = onRefresh)
       is TimerUiState.Error ->
@@ -348,8 +399,12 @@ private fun RefreshButton(onClick: () -> Unit, isRefreshing: Boolean) {
     } else {
       0f
     }
+  val haptics = LocalHapticFeedback.current
   IconButton(
-    onClick = onClick,
+    onClick = {
+      haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+      onClick()
+    },
     modifier = Modifier.size(REFRESH_BUTTON_SIZE),
     colors = IconButtonDefaults.iconButtonColors(),
   ) {
@@ -398,6 +453,8 @@ private fun IdleContent(
   }
 }
 
+// Just the header - the elapsed-time readout and description render as a screen-level overlay in
+// TimerScreen instead (see the comment on its outer Box for why).
 @Composable
 private fun RunningContent(
   state: TimerUiState.Running,
@@ -405,40 +462,27 @@ private fun RunningContent(
   onRefresh: () -> Unit,
 ) {
   TopButtonRow(onRefresh = onRefresh, isRefreshing = isRefreshing)
-  Row(verticalAlignment = Alignment.CenterVertically) {
+  // This row is top-anchored in the normal flow, but the elapsed-time number below it is a
+  // separate, independently-centered overlay (see TimerScreen) - the two layout trees don't know
+  // about each other, so a plain trailing Spacer here would add invisible space without actually
+  // pulling this row further from the number. A visual-only upward offset does what's needed
+  // instead: it does not change the space this row occupies, only where its content draws. Capped
+  // below TOP_BUTTON_ROW_GAP (with a safety margin) so this can never climb far enough to overlap
+  // the refresh button above it, which does not move - an earlier version of this scaled the offset
+  // by the number's own height to also clear it on narrow screens where the number wraps to two
+  // lines, but that reasoned about distance to the number's center rather than its top edge, so it
+  // overshot by roughly half the number's height and ran straight into the refresh icon on normal
+  // screens. See HANDOFF.md's known-debts entry on this for the still-open narrow-screen case.
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = Modifier.offset(y = -PROJECT_LABEL_CENTER_GAP),
+  ) {
     ProjectColorDot(color = state.projectColor)
     Spacer(modifier = Modifier.width(PROJECT_LABEL_ROW_GAP))
     Text(
       text =
         state.projectName ?: state.projectId ?: stringResource(R.string.timer_no_project_label),
       style = MaterialTheme.typography.labelMedium,
-      color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-  }
-  // numeralLarge is the single most important value on this screen, so it gets the biggest type
-  // on it. It is not actually tabular in the rendered typeface, though: measured on-device, the
-  // digit-glyph run visibly changes width tick to tick (e.g. a "1" versus an "8"), so the whole
-  // block would jump every second without "tnum" forcing fixed-width digits. Centering on
-  // fillMaxWidth rather than relying on the Column's own CenterHorizontally is deliberate: the
-  // fillMaxWidth box is measured as exactly screen-centered (confirmed via uiautomator bounds), but
-  // "tnum" alone only equalizes each digit's advance width, not where its ink sits within that
-  // width, so a trailing "1" still looked visibly off-center. FontFamily.Monospace draws each digit
-  // centered in its cell, which fixed that residual asymmetry (measured ink-center offset dropped
-  // from ~7-8px to ~1px, within antialiasing noise, across several digit combinations).
-  Text(
-    text = formatElapsed(state.elapsedSeconds),
-    modifier = Modifier.fillMaxWidth(),
-    style =
-      MaterialTheme.typography.numeralLarge.copy(
-        fontFeatureSettings = "tnum",
-        fontFamily = FontFamily.Monospace,
-      ),
-    textAlign = TextAlign.Center,
-  )
-  if (!state.description.isNullOrBlank()) {
-    Text(
-      text = state.description,
-      style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
   }
