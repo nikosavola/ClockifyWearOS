@@ -49,6 +49,10 @@ dependencies {
   implementation(libs.wear.compose.foundation)
   implementation(libs.wear.compose.navigation)
   implementation(libs.wear.ongoing)
+  implementation(libs.wear.tiles)
+  implementation(libs.wear.protolayout.material3)
+  implementation(libs.wear.protolayout.core)
+  implementation(libs.wear.watchface.complications.data.source.ktx)
 
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.serialization.json)

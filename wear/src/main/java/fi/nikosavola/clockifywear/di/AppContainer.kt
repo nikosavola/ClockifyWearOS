@@ -11,6 +11,7 @@ import fi.nikosavola.clockifywear.data.SettingsStore
 import fi.nikosavola.clockifywear.data.api.CLOCKIFY_BASE_URL
 import fi.nikosavola.clockifywear.data.api.createClockifyApi
 import fi.nikosavola.clockifywear.notification.OngoingTimerNotifier
+import fi.nikosavola.clockifywear.tile.TileUpdater
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -25,10 +26,11 @@ private const val PROJECT_CACHE_FILE_NAME = "projects.json"
  * Manual DI root: no Hilt/Koin, matches PLANNING.md. Built once by
  * [fi.nikosavola.clockifywear.ClockifyApp] and handed down to composables.
  *
- * @param context used to locate [Context.getFilesDir], and retained by [ongoingTimerNotifier] for
- *   posting system notifications. Retaining it is safe: in production this is always the
- *   [android.app.Application] instance ([fi.nikosavola.clockifywear.ClockifyApp]), which lives for
- *   the whole process, never an Activity.
+ * @param context used to locate [Context.getFilesDir], and retained by [ongoingTimerNotifier] and
+ *   [tileUpdater] for posting system notifications and requesting Tile/complication refreshes.
+ *   Retaining it is safe: in production this is always the [android.app.Application] instance
+ *   ([fi.nikosavola.clockifywear.ClockifyApp]), which lives for the whole process, never an
+ *   Activity.
  * @param baseUrl overridable so tests can point the client at a MockWebServer instance.
  * @param dataStore overridable so tests can reuse one DataStore instance across two
  *   [SettingsStore]s to simulate a cold restart (see [settingsPrimed] below); production always
@@ -54,6 +56,8 @@ class AppContainer(
   val repository: ClockifyRepository = ClockifyRepository(api, settingsStore, projectCache)
 
   val ongoingTimerNotifier: OngoingTimerNotifier = OngoingTimerNotifier(context)
+
+  val tileUpdater: TileUpdater = TileUpdater(context)
 
   // SettingsStore.apiKeySupplier reads an in-memory mirror that starts null until something reads
   // `settings`. Most repository calls prime it as a side effect (they read currentSettings() for

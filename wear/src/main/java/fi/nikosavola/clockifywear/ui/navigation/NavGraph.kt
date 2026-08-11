@@ -63,7 +63,10 @@ private fun TimerDestination(appContainer: AppContainer, navController: NavHostC
               repository = appContainer.repository,
               settingsStore = appContainer.settingsStore,
               settingsPrimed = appContainer.settingsPrimed,
-              onRunningStateChanged = appContainer.ongoingTimerNotifier::onTimerStateChanged,
+              onRunningStateChanged = { state ->
+                appContainer.ongoingTimerNotifier.onTimerStateChanged(state)
+                appContainer.tileUpdater.onTimerStateChanged(state)
+              },
             )
           }
         }
@@ -86,7 +89,10 @@ private fun SettingsDestination(appContainer: AppContainer) {
             SettingsViewModel(
               repository = appContainer.repository,
               settingsStore = appContainer.settingsStore,
-              onSignedOut = appContainer.ongoingTimerNotifier::cancel,
+              onSignedOut = {
+                appContainer.ongoingTimerNotifier.cancel()
+                appContainer.tileUpdater.refresh()
+              },
             )
           }
         }

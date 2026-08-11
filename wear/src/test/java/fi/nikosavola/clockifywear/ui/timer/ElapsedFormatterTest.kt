@@ -30,4 +30,22 @@ class ElapsedFormatterTest {
   fun `negative input clamps to zero instead of rendering a negative timer`() {
     assertEquals("00:00:00", formatElapsed(-42))
   }
+
+  @Test
+  fun `formatElapsedMinutes drops seconds`() {
+    assertEquals("0:00", formatElapsedMinutes(0))
+    assertEquals("0:01", formatElapsedMinutes(65))
+  }
+
+  @Test
+  fun `formatElapsedMinutes carries into the hours field unpadded`() {
+    assertEquals("1:00", formatElapsedMinutes(3_600))
+    assertEquals("2:15", formatElapsedMinutes(8_130))
+    assertEquals("100:00", formatElapsedMinutes(360_000))
+  }
+
+  @Test
+  fun `formatElapsedMinutes clamps negative input to zero`() {
+    assertEquals("0:00", formatElapsedMinutes(-42))
+  }
 }

@@ -24,6 +24,12 @@
     <string name="timer_refresh_button">Refresh</string>
     <string name="notification_timer_running_title">Timer running</string>
 
+    <string name="tile_title">Clockify</string>
+    <string name="tile_no_timer_running">No timer running</string>
+    <string name="complication_idle_label">Idle</string>
+    <string name="complication_preview_time">12:34</string>
+    <string name="complication_preview_project">Client</string>
+
     <string name="project_picker_title">Choose project</string>
     <string name="project_picker_empty">No projects found. Add one in the Clockify web app.</string>
 
