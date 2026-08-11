@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Clockify</string>
+    <string name="app_name">ClockifyWearOS</string>
 
-    <string name="loading">Loading...</string>
+    <string name="loading">Loading&#8230;</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_api_key_label">API key</string>
@@ -10,7 +10,7 @@
     <string name="settings_paste_button">Paste</string>
     <string name="settings_sign_in_button">Sign in</string>
     <string name="settings_sign_out_button">Sign out</string>
-    <string name="settings_signing_in">Signing in...</string>
+    <string name="settings_signing_in">Signing in&#8230;</string>
     <string name="settings_signed_in_workspace">Workspace: %1$s</string>
     <string name="settings_signed_in_account">Signed in as %1$s</string>
 

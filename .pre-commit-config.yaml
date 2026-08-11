@@ -2,6 +2,24 @@
 # Optimized pre-commit configuration utilizing prek parallel priority pipelines.
 # Ref: https://prek.j178.dev/proposals/concurrency/?h=parallel
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        priority: 10
+      - id: end-of-file-fixer
+        priority: 10
+      - id: mixed-line-ending
+        priority: 10
+      - id: check-merge-conflict
+        priority: 20
+      - id: check-added-large-files
+        priority: 20
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.2
+    hooks:
+      - id: markdownlint-cli2
+        priority: 20
   - repo: local
     hooks:
       # Priority 10: Auto-formatting stage. Runs concurrently.

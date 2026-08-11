@@ -74,7 +74,7 @@ tasks.register("formatAll") {
 
 tasks.register("lintAll") {
   group = "verification"
-  description = "Run ktfmt, ktlint and detekt checks on the Kotlin codebase"
+  description = "Run ktfmt, ktlint, detekt and Android Lint checks"
   dependsOn(
     "ktfmtCheck",
     ":wear:ktfmtCheckScripts",
@@ -82,6 +82,7 @@ tasks.register("lintAll") {
     ":wear:ktfmtCheckKotlin",
     ":wear:ktlintCheck",
     ":wear:detekt",
+    ":wear:lintDebug",
   )
 }
 

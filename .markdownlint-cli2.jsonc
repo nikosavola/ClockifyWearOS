@@ -1,0 +1,13 @@
+{
+  "config": {
+    "default": true,
+    // This project writes long-form prose paragraphs rather than hard-wrapping at a fixed column.
+    "MD013": false,
+    // PLANNING.md's reference list is deliberately bare URLs, not markdown links.
+    "MD034": false,
+    // Milestone labels ("**M1 — ...**") are intentionally bold inline text, not headings.
+    "MD036": false,
+    // Pedantic pipe-spacing preference that doesn't match this project's existing table style.
+    "MD060": false
+  }
+}
