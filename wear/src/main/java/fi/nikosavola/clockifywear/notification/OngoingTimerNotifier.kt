@@ -60,7 +60,7 @@ class OngoingTimerNotifier(context: Context) {
 
     val builder =
       NotificationCompat.Builder(context, CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_launcher_foreground)
+        .setSmallIcon(R.drawable.ic_stat_clockify)
         .setOngoing(true)
         .setContentTitle(
           projectName ?: context.getString(R.string.notification_timer_running_title)
@@ -80,7 +80,7 @@ class OngoingTimerNotifier(context: Context) {
     val status = Status.forPart(Status.StopwatchPart(timeZeroMillis))
 
     OngoingActivity.Builder(context, NOTIFICATION_ID, builder)
-      .setStaticIcon(R.drawable.ic_launcher_foreground)
+      .setStaticIcon(R.drawable.ic_stat_clockify)
       .setTouchIntent(touchIntent)
       .setStatus(status)
       .build()

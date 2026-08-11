@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notification / ongoing-activity icon: flat silhouette on transparency, tinted by the system. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108"
+    android:tint="?android:attr/colorControlNormal">
+    <path android:fillColor="#FF000000" android:pathData="M45,13 H63 A4,4 0 0 1 67,17 V18 A4,4 0 0 1 63,22 H45 A4,4 0 0 1 41,18 V17 A4,4 0 0 1 45,13 Z" />
+    <path android:fillColor="#FF000000" android:pathData="M45,86 H63 A4,4 0 0 1 67,90 V91 A4,4 0 0 1 63,95 H45 A4,4 0 0 1 41,91 V90 A4,4 0 0 1 45,86 Z" />
+    <path android:strokeColor="#FF000000" android:strokeWidth="8" android:fillColor="#00000000" android:pathData="M27,54 a27,27 0 1 0 54,0 a27,27 0 1 0 -54,0 Z" />
+    <path android:strokeColor="#FF000000" android:strokeWidth="5.5" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M59.7,48.3 L67.4,40.6" />
+    <path android:strokeColor="#FF000000" android:strokeWidth="7.5" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M59.7,59.7 L63.6,63.6" />
+    <path android:fillColor="#FF000000" android:pathData="M49.8,54 a4.2,4.2 0 1 0 8.4,0 a4.2,4.2 0 1 0 -8.4,0 Z" />
+</vector>
