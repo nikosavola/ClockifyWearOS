@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material3.Button
@@ -86,6 +87,9 @@ private fun SignedOutContent(state: SettingsUiState.SignedOut, onSignIn: (String
   // BasicTextField defaults to black text and a black cursor, which is invisible on the dark Wear
   // theme, and draws no boundary of its own, so an unstyled one looks like empty space. Both have
   // to be supplied explicitly.
+  // visualTransformation masks the key on screen (and in screenshots/recordings) the same way a
+  // password field would; the clipboard-paste flow above is the primary input path, so there is no
+  // "show" toggle to verify what was typed.
   BasicTextField(
     value = apiKeyInput,
     onValueChange = { apiKeyInput = it },
@@ -98,6 +102,7 @@ private fun SignedOutContent(state: SettingsUiState.SignedOut, onSignIn: (String
     textStyle =
       MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
     cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+    visualTransformation = PasswordVisualTransformation(),
   )
   // A watch's Wireless debugging pairing already implies a paired phone, and Wear OS syncs the
   // system clipboard between them, so pasting a key copied on the phone works without any
