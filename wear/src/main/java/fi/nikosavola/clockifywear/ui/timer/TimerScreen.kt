@@ -1,16 +1,26 @@
 package fi.nikosavola.clockifywear.ui.timer
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitHorizontalTouchSlopOrCancellation
 import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,9 +32,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -33,9 +46,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -61,6 +76,7 @@ import fi.nikosavola.clockifywear.ui.ErrorContent
 import fi.nikosavola.clockifywear.ui.projects.ProjectColorDot
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlinx.coroutines.launch
 
 private val PROJECT_LABEL_ROW_GAP = 4.dp
 private val ICON_BUTTON_ROW_GAP = 12.dp
@@ -115,6 +131,9 @@ private val SETTINGS_SWIPE_EDGE_GUARD = 32.dp
 // https://developer.android.com/training/wearables/accessibility), smaller only visually.
 private val REFRESH_BUTTON_SIZE = 48.dp
 private val REFRESH_ICON_SIZE = 16.dp
+// How far the EdgeButton's Play/Pause glyph shrinks on tap before springing back to full size,
+// the visual half of the tap feedback (the other half is the haptic pulse alongside it).
+private const val EDGE_BUTTON_PRESS_SCALE = 0.85f
 
 @Composable
 fun TimerScreen(
@@ -175,6 +194,10 @@ fun TimerScreen(
   }
 }
 
+// One EdgeButton call site shared by both states, rather than a `when` with a separate EdgeButton
+// per branch: AnimatedContent only cross-fades a value across recompositions of the same call
+// site, so two structurally distinct EdgeButton composables in different branches would swap the
+// icon instantly instead of animating between them.
 @Composable
 private fun TimerEdgeButton(
   state: TimerUiState,
@@ -182,16 +205,44 @@ private fun TimerEdgeButton(
   onStop: () -> Unit,
   onChooseProject: () -> Unit,
 ) {
-  when (state) {
-    is TimerUiState.Idle ->
-      EdgeButton(onClick = if (state.hasDefaultProject) onStart else onChooseProject) {
-        PlayIcon(contentDescription = stringResource(R.string.timer_start_button))
+  val onClick: (() -> Unit)? =
+    when (state) {
+      is TimerUiState.Idle -> if (state.hasDefaultProject) onStart else onChooseProject
+      is TimerUiState.Running -> onStop
+      else -> null
+    }
+  if (onClick == null) return
+
+  val haptics = LocalHapticFeedback.current
+  val pressScale = remember { Animatable(1f) }
+  val scope = rememberCoroutineScope()
+
+  EdgeButton(
+    onClick = {
+      haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+      scope.launch {
+        pressScale.snapTo(EDGE_BUTTON_PRESS_SCALE)
+        pressScale.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
       }
-    is TimerUiState.Running ->
-      EdgeButton(onClick = onStop) {
-        PauseIcon(contentDescription = stringResource(R.string.timer_stop_button))
+      onClick()
+    }
+  ) {
+    Box(modifier = Modifier.scale(pressScale.value)) {
+      AnimatedContent(
+        targetState = state is TimerUiState.Running,
+        transitionSpec = {
+          scaleIn(initialScale = 0.6f) + fadeIn() togetherWith
+            scaleOut(targetScale = 0.6f) + fadeOut()
+        },
+        label = "playPauseIcon",
+      ) { running ->
+        if (running) {
+          PauseIcon(contentDescription = stringResource(R.string.timer_stop_button))
+        } else {
+          PlayIcon(contentDescription = stringResource(R.string.timer_start_button))
+        }
       }
-    else -> {}
+    }
   }
 }
 

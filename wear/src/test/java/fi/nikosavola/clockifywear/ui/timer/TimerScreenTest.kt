@@ -2,7 +2,11 @@ package fi.nikosavola.clockifywear.ui.timer
 
 import android.content.Context
 import androidx.annotation.StringRes
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -27,6 +31,7 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -42,6 +47,14 @@ private const val USER_ID = "5f8a1b2c3d4e5f6a7b8c9d0e"
 private const val PROJECT_ID = "5f8a1b2c3d4e5f6a7b8c9d20"
 private const val API_KEY = "test-api-key"
 private const val WAIT_TIMEOUT_MS = 5_000L
+
+private class FakeHapticFeedback : HapticFeedback {
+  var lastType: HapticFeedbackType? = null
+
+  override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+    lastType = hapticFeedbackType
+  }
+}
 
 // Robolectric's default (LEGACY) graphics shim does not support everything Compose's text/layout
 // pipeline needs; NATIVE mode is the documented combination for Compose UI tests under Robolectric.
@@ -171,6 +184,30 @@ class TimerScreenTest {
     composeRule.onNodeWithContentDescription(string(R.string.timer_start_button)).performClick()
 
     assertTrue(choseProject)
+  }
+
+  @Test
+  fun `clicking the edge button performs a confirm haptic`() {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody("[]"))
+    val viewModel = TimerViewModel(repository, settingsStore)
+    val haptics = FakeHapticFeedback()
+
+    composeRule.setContent {
+      CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+        TimerScreen(
+          viewModel = viewModel,
+          onNavigateToSettings = {},
+          onNavigateToProjectPicker = {},
+          onNavigateToRecents = {},
+        )
+      }
+    }
+
+    waitForContentDescription(string(R.string.timer_start_button))
+    composeRule.onNodeWithContentDescription(string(R.string.timer_start_button)).performClick()
+
+    assertEquals(HapticFeedbackType.Confirm, haptics.lastType)
   }
 
   @Test
