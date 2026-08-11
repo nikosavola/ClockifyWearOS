@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.SystemClock
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -15,6 +16,7 @@ import androidx.wear.ongoing.Status
 import fi.nikosavola.clockifywear.R
 import fi.nikosavola.clockifywear.ui.MainActivity
 import fi.nikosavola.clockifywear.ui.timer.TimerUiState
+import java.time.Duration
 import java.time.Instant
 
 private const val NOTIFICATION_ID = 1
@@ -26,7 +28,11 @@ private const val CHANNEL_ID = "ongoing_timer"
  * purely by [TimerUiState] transitions, not by the elapsed-seconds ticker: the system renders and
  * ticks the stopwatch text itself from [Status.StopwatchPart]'s start time.
  */
-class OngoingTimerNotifier(private val context: Context) {
+class OngoingTimerNotifier(context: Context) {
+  // Defensive: guarantees this is always an Application context, never an Activity, regardless of
+  // what the caller passes in.
+  private val context: Context = context.applicationContext
+
   fun onTimerStateChanged(state: TimerUiState) {
     if (state is TimerUiState.Running) {
       start(startInstant = state.startInstant, projectName = state.projectName)
@@ -63,7 +69,15 @@ class OngoingTimerNotifier(private val context: Context) {
         .setContentIntent(touchIntent)
         .setSilent(true)
 
-    val status = Status.forPart(Status.StopwatchPart(startInstant.toEpochMilli()))
+    // StopwatchPart's Long is a SystemClock.elapsedRealtime() timestamp, not an epoch millis one -
+    // undocumented in the decompiled signature (both are just "long"), confirmed only by checking
+    // real usage of this API. Passing startInstant.toEpochMilli() directly here rendered as a
+    // wildly negative elapsed time on-device: elapsedRealtime() is boot-relative and far smaller
+    // than a Unix epoch value, so "elapsedRealtime() - epochMillis" underflowed hugely negative.
+    // Converting the wall-clock elapsed duration into the elapsedRealtime domain fixes it.
+    val elapsedSinceStart = Duration.between(startInstant, Instant.now())
+    val timeZeroMillis = SystemClock.elapsedRealtime() - elapsedSinceStart.toMillis()
+    val status = Status.forPart(Status.StopwatchPart(timeZeroMillis))
 
     OngoingActivity.Builder(context, NOTIFICATION_ID, builder)
       .setStaticIcon(R.drawable.ic_launcher_foreground)
@@ -75,7 +89,7 @@ class OngoingTimerNotifier(private val context: Context) {
     NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
   }
 
-  private fun cancel() {
+  fun cancel() {
     NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
   }
 
