@@ -26,6 +26,8 @@
 
     <string name="tile_title">Clockify</string>
     <string name="tile_no_timer_running">Ingen tidtagning igång</string>
+    <string name="tile_status_unknown">Status okänd</string>
+    <string name="tile_action_failed">Åtgärden misslyckades</string>
     <string name="complication_idle_label">Vila</string>
     <string name="complication_preview_time">12:34</string>
     <string name="complication_preview_project">Kund</string>

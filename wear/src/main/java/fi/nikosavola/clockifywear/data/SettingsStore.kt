@@ -21,6 +21,10 @@ data class Settings(
   val defaultProjectId: String? = null,
   val defaultTaskId: String? = null,
   val email: String? = null,
+  // See TileClickResolver: durable, not just an in-memory field on the service, because the replay
+  // window this guards against (a stale click id redelivered on a later refresh) can span the
+  // Tile service process being evicted and restarted in between.
+  val lastConsumedTileClickToken: String? = null,
 )
 
 /**
@@ -38,6 +42,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
   private val defaultProjectIdKey = stringPreferencesKey("default_project_id")
   private val defaultTaskIdKey = stringPreferencesKey("default_task_id")
   private val emailKey = stringPreferencesKey("email")
+  private val lastConsumedTileClickTokenKey = stringPreferencesKey("last_consumed_tile_click_token")
 
   // createClockifyApi needs a synchronous `() -> String?` supplier for its OkHttp interceptor,
   // which runs on an OkHttp dispatcher thread and must never block on a DataStore Flow. This
@@ -57,6 +62,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
           defaultProjectId = prefs[defaultProjectIdKey],
           defaultTaskId = prefs[defaultTaskIdKey],
           email = prefs[emailKey],
+          lastConsumedTileClickToken = prefs[lastConsumedTileClickTokenKey],
         )
         .also { cachedApiKey = it.apiKey }
     }
@@ -80,6 +86,9 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
   suspend fun setDefaultTaskId(taskId: String?) = setOrRemove(defaultTaskIdKey, taskId)
 
   suspend fun setEmail(email: String?) = setOrRemove(emailKey, email)
+
+  suspend fun setLastConsumedTileClickToken(token: String?) =
+    setOrRemove(lastConsumedTileClickTokenKey, token)
 
   /** Clears all persisted settings, e.g. on sign-out. */
   suspend fun clear() {

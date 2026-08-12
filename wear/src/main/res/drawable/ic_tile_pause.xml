@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tile edge-button glyph: same bar proportions as TimerScreen's Canvas-drawn PauseIcon
+     (PAUSE_BAR_WIDTH = 6dp, PAUSE_BAR_GAP = 5dp, scaled to a 24dp viewport). White fill so the
+     material3 icon() tint applies. Square corners, unlike the Canvas version's PAUSE_BAR_CORNER
+     (1.5dp) rounding - not worth the extra path arcs at this glyph size; deliberate, not missed. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M3.5,0 H9.5 V24 H3.5 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M14.5,0 H20.5 V24 H14.5 Z" />
+</vector>

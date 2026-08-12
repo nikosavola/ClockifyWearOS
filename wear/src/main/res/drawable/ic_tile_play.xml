@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tile edge-button glyph: same triangle proportions as TimerScreen's Canvas-drawn PlayIcon
+     (PLAY_TRIANGLE_INSET_FRACTION = 0.28). White fill so the material3 icon() tint applies. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M6.72,0 L6.72,24 L17.28,12 Z" />
+</vector>

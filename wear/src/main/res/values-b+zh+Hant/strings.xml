@@ -26,6 +26,8 @@
 
     <string name="tile_title">Clockify</string>
     <string name="tile_no_timer_running">目前沒有執行中的計時器</string>
+    <string name="tile_status_unknown">狀態未知</string>
+    <string name="tile_action_failed">操作失敗</string>
     <string name="complication_idle_label">閒置</string>
     <string name="complication_preview_time">12:34</string>
     <string name="complication_preview_project">客戶</string>

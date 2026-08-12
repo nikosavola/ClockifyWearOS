@@ -26,6 +26,8 @@
 
     <string name="tile_title">Clockify</string>
     <string name="tile_no_timer_running">Aucun minuteur en cours</string>
+    <string name="tile_status_unknown">Statut inconnu</string>
+    <string name="tile_action_failed">Action échouée</string>
     <string name="complication_idle_label">Inactif</string>
     <string name="complication_preview_time">12:34</string>
     <string name="complication_preview_project">Client</string>

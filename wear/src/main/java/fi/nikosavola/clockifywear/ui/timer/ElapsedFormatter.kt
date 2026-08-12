@@ -18,14 +18,18 @@ fun formatElapsed(totalSeconds: Long): String {
 }
 
 /**
- * Formats a duration given in whole seconds as `H:MM`, dropping seconds. For surfaces (Tile,
- * complication) that refresh on a cadence far coarser than a second, showing `HH:MM:SS` implies
- * live-second accuracy the surface can't actually deliver; this rounds down to whole minutes so the
- * displayed precision matches the real refresh cadence.
+ * Formats a duration given in whole seconds as e.g. `1h 23min`, `23min`, or `1h` (minutes omitted
+ * when exactly zero), for glance surfaces (Tile, complication) that refresh on a cadence far
+ * coarser than a second and want that coarser precision spelled out in words rather than implying
+ * live-second accuracy with a colon-separated clock face.
  */
-fun formatElapsedMinutes(totalSeconds: Long): String {
+fun formatElapsedHoursMinutesUnits(totalSeconds: Long): String {
   val clamped = totalSeconds.coerceAtLeast(0)
   val hours = clamped / SECONDS_PER_HOUR
   val minutes = clamped % SECONDS_PER_HOUR / SECONDS_PER_MINUTE
-  return String.format(Locale.US, "%d:%02d", hours, minutes)
+  return when {
+    hours == 0L -> "${minutes}min"
+    minutes == 0L -> "${hours}h"
+    else -> "${hours}h ${minutes}min"
+  }
 }
