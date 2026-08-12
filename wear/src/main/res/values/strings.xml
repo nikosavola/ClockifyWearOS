@@ -28,6 +28,7 @@
     <string name="tile_no_timer_running">No timer running</string>
     <string name="tile_status_unknown">Status unknown</string>
     <string name="tile_action_failed">Action failed</string>
+    <string name="tile_sign_in_required">Sign in required</string>
     <string name="tile_duration_hours_minutes">%1$dh %2$dmin</string>
     <string name="tile_duration_hours_only">%1$dh</string>
     <string name="tile_duration_minutes_only">%1$dmin</string>

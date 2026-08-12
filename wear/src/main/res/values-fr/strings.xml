@@ -28,6 +28,7 @@
     <string name="tile_no_timer_running">Aucun minuteur en cours</string>
     <string name="tile_status_unknown">Statut inconnu</string>
     <string name="tile_action_failed">Action échouée</string>
+    <string name="tile_sign_in_required">Connexion requise</string>
     <string name="tile_duration_hours_minutes">%1$dh %2$dmin</string>
     <string name="tile_duration_hours_only">%1$dh</string>
     <string name="tile_duration_minutes_only">%1$dmin</string>

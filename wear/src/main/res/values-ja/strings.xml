@@ -28,6 +28,7 @@
     <string name="tile_no_timer_running">タイマーは停止中</string>
     <string name="tile_status_unknown">状態不明</string>
     <string name="tile_action_failed">操作に失敗しました</string>
+    <string name="tile_sign_in_required">サインインが必要です</string>
     <string name="tile_duration_hours_minutes">%1$d時間%2$d分</string>
     <string name="tile_duration_hours_only">%1$d時間</string>
     <string name="tile_duration_minutes_only">%1$d分</string>

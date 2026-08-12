@@ -28,6 +28,7 @@
     <string name="tile_no_timer_running">目前沒有執行中的計時器</string>
     <string name="tile_status_unknown">狀態未知</string>
     <string name="tile_action_failed">操作失敗</string>
+    <string name="tile_sign_in_required">需要登入</string>
     <string name="tile_duration_hours_minutes">%1$d小時%2$d分鐘</string>
     <string name="tile_duration_hours_only">%1$d小時</string>
     <string name="tile_duration_minutes_only">%1$d分鐘</string>

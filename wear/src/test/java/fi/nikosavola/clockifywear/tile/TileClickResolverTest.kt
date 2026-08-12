@@ -200,9 +200,30 @@ class TileClickResolverTest {
     // delivers, as opposed to a tap.
     val outcome = resolver.resolve(null, fakeTokenStore(), hasDefaultProject = true, repository)
 
-    assertEquals(TileRunningState.Unknown, outcome.runningState)
+    assertEquals(TileRunningState.Unknown(ClockifyError.Offline), outcome.runningState)
     assertFalse(outcome.actionFailed)
   }
+
+  @Test
+  fun `a routine refresh whose fetch fails with NotSignedIn carries that error through`() =
+    runTest {
+      val repository =
+        TileActionRepository(
+          fetchRunningEntry = { ClockifyResult.Failure(ClockifyError.NotSignedIn) },
+          startTimer = { ClockifyResult.Success(entry("e1")) },
+          stopTimer = { ClockifyResult.Success(Unit) },
+        )
+      val resolver = TileClickResolver()
+
+      // Same "no click id" shape as the routine-refresh test above, but the specific failure
+      // reason matters here: the rendering layer needs to tell "signed out" apart from any other
+      // transient fetch failure, which it can only do if Unknown carries the real error through
+      // instead of discarding it.
+      val outcome = resolver.resolve(null, fakeTokenStore(), hasDefaultProject = true, repository)
+
+      assertEquals(TileRunningState.Unknown(ClockifyError.NotSignedIn), outcome.runningState)
+      assertFalse(outcome.actionFailed)
+    }
 
   @Test
   fun `a failed start surfaces actionFailed`() = runTest {
@@ -257,7 +278,7 @@ class TileClickResolverTest {
     // clobber.
     assertEquals(0, startCalls)
     assertEquals(1, fetchCalls)
-    assertEquals(TileRunningState.Unknown, outcome.runningState)
+    assertEquals(TileRunningState.Unknown(ClockifyError.Offline), outcome.runningState)
     assertTrue(outcome.actionFailed)
   }
 }

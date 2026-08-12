@@ -28,6 +28,7 @@
     <string name="tile_no_timer_running">Kein Timer aktiv</string>
     <string name="tile_status_unknown">Status unbekannt</string>
     <string name="tile_action_failed">Aktion fehlgeschlagen</string>
+    <string name="tile_sign_in_required">Anmeldung erforderlich</string>
     <string name="tile_duration_hours_minutes">%1$d Std %2$d Min</string>
     <string name="tile_duration_hours_only">%1$d Std</string>
     <string name="tile_duration_minutes_only">%1$d Min</string>

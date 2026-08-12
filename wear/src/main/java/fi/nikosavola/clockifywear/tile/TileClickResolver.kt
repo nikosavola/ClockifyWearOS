@@ -1,5 +1,6 @@
 package fi.nikosavola.clockifywear.tile
 
+import fi.nikosavola.clockifywear.data.ClockifyError
 import fi.nikosavola.clockifywear.data.ClockifyResult
 import fi.nikosavola.clockifywear.data.api.dto.TimeEntryDto
 import kotlinx.coroutines.sync.Mutex
@@ -21,7 +22,7 @@ sealed interface TileRunningState {
   data class Confirmed(val entry: TimeEntryDto?) : TileRunningState
 
   /** The fetch itself failed (offline/unauthorized/rate-limited) - distinct from confirmed idle. */
-  data object Unknown : TileRunningState
+  data class Unknown(val error: ClockifyError) : TileRunningState
 }
 
 data class TileClickOutcome(val runningState: TileRunningState, val actionFailed: Boolean = false)
@@ -90,9 +91,10 @@ class TileClickResolver(private val mutex: Mutex = Mutex()) {
   // stopTimer() is safe to call unconditionally: the repository treats "nothing running" as a
   // successful no-op, so this doesn't need to be gated behind a prior fetch.
   private suspend fun resolveStop(repository: TileActionRepository): TileClickOutcome =
-    when (repository.stopTimer()) {
+    when (val result = repository.stopTimer()) {
       is ClockifyResult.Success -> TileClickOutcome(TileRunningState.Confirmed(null))
-      is ClockifyResult.Failure -> TileClickOutcome(TileRunningState.Unknown, actionFailed = true)
+      is ClockifyResult.Failure ->
+        TileClickOutcome(TileRunningState.Unknown(result.error), actionFailed = true)
     }
 
   // Unlike stopTimer(), startTimer() is not a safe unconditional call: it stops whatever's
@@ -112,20 +114,22 @@ class TileClickResolver(private val mutex: Mutex = Mutex()) {
       is ClockifyResult.Success ->
         fetchResult.value?.let { TileClickOutcome(TileRunningState.Confirmed(it)) }
           ?: performStart(repository)
-      is ClockifyResult.Failure -> TileClickOutcome(TileRunningState.Unknown, actionFailed = true)
+      is ClockifyResult.Failure ->
+        TileClickOutcome(TileRunningState.Unknown(fetchResult.error), actionFailed = true)
     }
   }
 
   private suspend fun performStart(repository: TileActionRepository): TileClickOutcome =
     when (val result = repository.startTimer()) {
       is ClockifyResult.Success -> TileClickOutcome(TileRunningState.Confirmed(result.value))
-      is ClockifyResult.Failure -> TileClickOutcome(TileRunningState.Unknown, actionFailed = true)
+      is ClockifyResult.Failure ->
+        TileClickOutcome(TileRunningState.Unknown(result.error), actionFailed = true)
     }
 
   private suspend fun fetchState(repository: TileActionRepository): TileRunningState =
     when (val result = repository.fetchRunningEntry()) {
       is ClockifyResult.Success -> TileRunningState.Confirmed(result.value)
-      is ClockifyResult.Failure -> TileRunningState.Unknown
+      is ClockifyResult.Failure -> TileRunningState.Unknown(result.error)
     }
 
   private enum class Direction {

@@ -32,6 +32,7 @@ import fi.nikosavola.clockifywear.data.api.dto.ProjectDto
 import fi.nikosavola.clockifywear.data.api.dto.TimeEntryDto
 import fi.nikosavola.clockifywear.ui.MainActivity
 import fi.nikosavola.clockifywear.ui.projects.parseProjectColor
+import fi.nikosavola.clockifywear.ui.requiresSignIn
 import fi.nikosavola.clockifywear.ui.timer.elapsedHoursAndMinutes
 import java.time.Duration
 import java.time.Instant
@@ -149,7 +150,12 @@ class ClockifyTileService : TileService() {
     val settings = settingsStore.currentSettings()
     val outcome = resolveClick(requestParams, repository, settings, settingsStore)
     val entry = (outcome.runningState as? TileRunningState.Confirmed)?.entry
-    val statusUnknown = outcome.runningState is TileRunningState.Unknown
+    val unknownState = outcome.runningState as? TileRunningState.Unknown
+    val statusUnknown = unknownState != null
+    // Distinguishes "signed out entirely" from any other transient fetch failure: a Play-button
+    // LoadAction retry can never succeed while signed out, so that case needs LaunchAction to the
+    // app's Settings screen instead - see requiresSignIn's doc comment.
+    val signInRequired = unknownState?.error?.let(::requiresSignIn) ?: false
     val project = entry?.projectId?.let { resolveProject(repository, it) }
     val hasDefaultProject = settings.defaultProjectId != null
     val freshnessIntervalMillis =
@@ -166,10 +172,13 @@ class ClockifyTileService : TileService() {
     // A fresh token every build makes each rendered edge button's click id one-shot; see
     // TileClickResolver. Idle-with-no-default-project has no LoadAction equivalent of the real
     // app's onChooseProject navigation, so it falls back to launchApp instead of no-op-ing on tap.
+    // Signed-out is the same story: a LoadAction start/stop retry can't succeed while signed out,
+    // so it also falls back to launchApp, routing the user to the app's Settings screen instead.
     val token = Random.nextLong().toString()
     val edgeButtonClickable =
       when {
         entry != null -> loadActionClickable(buildStopClickId(token))
+        signInRequired -> launchApp
         hasDefaultProject -> loadActionClickable(buildStartClickId(token))
         else -> launchApp
       }
@@ -181,9 +190,15 @@ class ClockifyTileService : TileService() {
             text(getString(R.string.tile_title).layoutString, typography = Typography.LABEL_SMALL)
           },
           onClick = launchApp,
-          mainSlot = { mainSlotContent(entry, project, statusUnknown, outcome.actionFailed) },
+          mainSlot = {
+            mainSlotContent(entry, project, statusUnknown, signInRequired, outcome.actionFailed)
+          },
           bottomSlot = {
-            edgeButtonContent(isRunning = entry != null, onClick = edgeButtonClickable)
+            edgeButtonContent(
+              isRunning = entry != null,
+              signInRequired = signInRequired,
+              onClick = edgeButtonClickable,
+            )
           },
         )
       }
@@ -257,10 +272,21 @@ class ClockifyTileService : TileService() {
 
   private fun androidx.wear.protolayout.material3.MaterialScope.edgeButtonContent(
     isRunning: Boolean,
+    signInRequired: Boolean,
     onClick: ModifiersBuilders.Clickable,
   ): LayoutElementBuilders.LayoutElement {
+    // There's no dedicated "open app"/sign-in icon resource, so the signed-out case keeps the Play
+    // glyph (it does lead to the same place a real start would) but must not claim the description
+    // of an action it can't perform - the button launches the app to sign in, not a LoadAction
+    // start.
     val description =
-      getString(if (isRunning) R.string.timer_stop_button else R.string.timer_start_button)
+      getString(
+        when {
+          isRunning -> R.string.timer_stop_button
+          signInRequired -> R.string.settings_sign_in_button
+          else -> R.string.timer_start_button
+        }
+      )
     return iconEdgeButton(
       onClick = onClick,
       modifier = LayoutModifier.contentDescription(description),
@@ -273,11 +299,20 @@ class ClockifyTileService : TileService() {
     entry: TimeEntryDto?,
     project: ProjectDto?,
     statusUnknown: Boolean,
+    signInRequired: Boolean,
     actionFailed: Boolean,
   ): LayoutElementBuilders.LayoutElement =
     when {
-      // actionFailed takes priority: the user just tapped and needs to know the tap didn't stick,
-      // which matters more here than the general "we don't know current state" signal below.
+      // signInRequired takes priority over actionFailed: a failed start/stop tap while signed out
+      // is itself caused by being signed out, so naming that cause is strictly more useful than
+      // the generic "action failed" - and it matches the edge button, which has already switched
+      // to launchApp for this case instead of retrying the same doomed LoadAction.
+      signInRequired -> {
+        projectRow(projectColor = null, label = getString(R.string.tile_sign_in_required))
+      }
+      // actionFailed takes priority over the generic statusUnknown below: the user just tapped
+      // and needs to know the tap didn't stick, which matters more here than "we don't know
+      // current state" for any other transient failure.
       actionFailed -> {
         projectRow(projectColor = null, label = getString(R.string.tile_action_failed))
       }
