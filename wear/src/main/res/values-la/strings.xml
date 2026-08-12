@@ -28,6 +28,9 @@
     <string name="tile_no_timer_running">Nullum chronometrum currit</string>
     <string name="tile_status_unknown">Status ignotus</string>
     <string name="tile_action_failed">Actio non successit</string>
+    <string name="tile_duration_hours_minutes">%1$dh %2$dmin</string>
+    <string name="tile_duration_hours_only">%1$dh</string>
+    <string name="tile_duration_minutes_only">%1$dmin</string>
     <string name="complication_idle_label">Otiosum</string>
     <string name="complication_preview_time">12:34</string>
     <string name="complication_preview_project">Cliens</string>

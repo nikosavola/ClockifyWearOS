@@ -28,6 +28,9 @@
     <string name="tile_no_timer_running">Таймер не запущен</string>
     <string name="tile_status_unknown">Статус неизвестен</string>
     <string name="tile_action_failed">Действие не выполнено</string>
+    <string name="tile_duration_hours_minutes">%1$d ч %2$d мин</string>
+    <string name="tile_duration_hours_only">%1$d ч</string>
+    <string name="tile_duration_minutes_only">%1$d мин</string>
     <string name="complication_idle_label">Ожидание</string>
     <string name="complication_preview_time">12:34</string>
     <string name="complication_preview_project">Клиент</string>

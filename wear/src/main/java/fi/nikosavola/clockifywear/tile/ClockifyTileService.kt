@@ -32,7 +32,7 @@ import fi.nikosavola.clockifywear.data.api.dto.ProjectDto
 import fi.nikosavola.clockifywear.data.api.dto.TimeEntryDto
 import fi.nikosavola.clockifywear.ui.MainActivity
 import fi.nikosavola.clockifywear.ui.projects.parseProjectColor
-import fi.nikosavola.clockifywear.ui.timer.formatElapsedHoursMinutesUnits
+import fi.nikosavola.clockifywear.ui.timer.elapsedHoursAndMinutes
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
@@ -50,8 +50,8 @@ import kotlinx.coroutines.launch
 // Elapsed time here is a static snapshot as of the last tile build, not a live tick:
 // androidx.wear.protolayout has no ready-made "elapsed since an Instant" dynamic type analogous to
 // androidx.wear.ongoing.Status.StopwatchPart, and building a custom dynamic expression binding for
-// it wasn't worth it for v1. Displayed with formatElapsedHoursMinutesUnits (whole minutes), not
-// seconds, to match this cadence honestly. The freshness interval itself is state-dependent: short
+// it wasn't worth it for v1. Displayed with elapsedHoursAndMinutes (whole minutes), not seconds,
+// to match this cadence honestly. The freshness interval itself is state-dependent: short
 // while a timer is running (the displayed minute can go stale), much longer while idle.
 private val FRESHNESS_INTERVAL_RUNNING_MILLIS = TimeUnit.MINUTES.toMillis(1)
 private val FRESHNESS_INTERVAL_IDLE_MILLIS = TimeUnit.MINUTES.toMillis(30)
@@ -286,6 +286,13 @@ class ClockifyTileService : TileService() {
       }
       entry != null -> {
         val elapsedSeconds = Duration.between(entry.timeInterval.start, Instant.now()).seconds
+        val (hours, minutes) = elapsedHoursAndMinutes(elapsedSeconds)
+        val durationText =
+          when {
+            hours == 0L -> getString(R.string.tile_duration_minutes_only, minutes)
+            minutes == 0L -> getString(R.string.tile_duration_hours_only, hours)
+            else -> getString(R.string.tile_duration_hours_minutes, hours, minutes)
+          }
         LayoutElementBuilders.Column.Builder()
           .setWidth(DimensionBuilders.expand())
           .setHorizontalAlignment(LayoutElementBuilders.HORIZONTAL_ALIGN_CENTER)
@@ -295,12 +302,7 @@ class ClockifyTileService : TileService() {
               label = project?.name ?: getString(R.string.timer_no_project_label),
             )
           )
-          .addContent(
-            text(
-              formatElapsedHoursMinutesUnits(elapsedSeconds).layoutString,
-              typography = Typography.NUMERAL_MEDIUM,
-            )
-          )
+          .addContent(text(durationText.layoutString, typography = Typography.NUMERAL_MEDIUM))
           .build()
       }
       else -> {

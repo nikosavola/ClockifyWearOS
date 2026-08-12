@@ -28,6 +28,9 @@
     <string name="tile_no_timer_running">没有正在运行的计时器</string>
     <string name="tile_status_unknown">状态未知</string>
     <string name="tile_action_failed">操作失败</string>
+    <string name="tile_duration_hours_minutes">%1$d小时%2$d分钟</string>
+    <string name="tile_duration_hours_only">%1$d小时</string>
+    <string name="tile_duration_minutes_only">%1$d分钟</string>
     <string name="complication_idle_label">空闲</string>
     <string name="complication_preview_time">12:34</string>
     <string name="complication_preview_project">客户</string>

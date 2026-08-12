@@ -32,27 +32,27 @@ class ElapsedFormatterTest {
   }
 
   @Test
-  fun `formatElapsedHoursMinutesUnits shows minutes only under an hour`() {
-    assertEquals("0min", formatElapsedHoursMinutesUnits(0))
-    assertEquals("0min", formatElapsedHoursMinutesUnits(59))
-    assertEquals("1min", formatElapsedHoursMinutesUnits(65))
-    assertEquals("59min", formatElapsedHoursMinutesUnits(3_599))
+  fun `elapsedHoursAndMinutes reports zero hours under an hour`() {
+    assertEquals(0L to 0L, elapsedHoursAndMinutes(0))
+    assertEquals(0L to 0L, elapsedHoursAndMinutes(59))
+    assertEquals(0L to 1L, elapsedHoursAndMinutes(65))
+    assertEquals(0L to 59L, elapsedHoursAndMinutes(3_599))
   }
 
   @Test
-  fun `formatElapsedHoursMinutesUnits omits minutes when exactly zero`() {
-    assertEquals("1h", formatElapsedHoursMinutesUnits(3_600))
-    assertEquals("100h", formatElapsedHoursMinutesUnits(360_000))
+  fun `elapsedHoursAndMinutes reports zero minutes exactly on the hour`() {
+    assertEquals(1L to 0L, elapsedHoursAndMinutes(3_600))
+    assertEquals(100L to 0L, elapsedHoursAndMinutes(360_000))
   }
 
   @Test
-  fun `formatElapsedHoursMinutesUnits shows both units when both are non-zero`() {
-    assertEquals("1h 1min", formatElapsedHoursMinutesUnits(3_660))
-    assertEquals("2h 15min", formatElapsedHoursMinutesUnits(8_130))
+  fun `elapsedHoursAndMinutes reports both fields when both are non-zero`() {
+    assertEquals(1L to 1L, elapsedHoursAndMinutes(3_660))
+    assertEquals(2L to 15L, elapsedHoursAndMinutes(8_130))
   }
 
   @Test
-  fun `formatElapsedHoursMinutesUnits clamps negative input to zero`() {
-    assertEquals("0min", formatElapsedHoursMinutesUnits(-42))
+  fun `elapsedHoursAndMinutes clamps negative input to zero`() {
+    assertEquals(0L to 0L, elapsedHoursAndMinutes(-42))
   }
 }
