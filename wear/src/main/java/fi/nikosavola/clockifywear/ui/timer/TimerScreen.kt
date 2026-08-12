@@ -2,6 +2,7 @@ package fi.nikosavola.clockifywear.ui.timer
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
@@ -79,6 +80,7 @@ import fi.nikosavola.clockifywear.ui.ErrorContent
 import fi.nikosavola.clockifywear.ui.projects.ProjectColorDot
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 private val PROJECT_LABEL_ROW_GAP = 4.dp
@@ -169,8 +171,7 @@ fun TimerScreen(
   val listState = rememberTransformingLazyColumnState()
   val state = uiState
   // Settings has no persistent button anymore, reachable only by this swipe, scoped to Idle/Running
-  // exactly like TopButtonRow/the EdgeButton (not Loading/Error). Attached to this outer Box, not
-  // to
+  // exactly like TopButtonRow/the EdgeButton (not Error). Attached to this outer Box, not to
   // TimerContent's own Column below: the ElapsedTimeOverlay added alongside it for Running is a
   // sibling that visually sits on top of (part of) that Column at the screen's vertical center, and
   // a plain Text with no gesture handler of its own still wins Compose's hit-test for touches
@@ -178,12 +179,7 @@ fun TimerScreen(
   // underneath - swiping through that band stopped reaching TimerContent's gesture detector
   // entirely once the overlay was introduced. A pointerInput attached directly to this Box, which
   // both of them are inside rather than beside, does not have that problem.
-  val swipeModifier =
-    if (state is TimerUiState.Idle || state is TimerUiState.Running) {
-      Modifier.swipeToSettings(onNavigateToSettings)
-    } else {
-      Modifier
-    }
+  val swipeModifier = swipeToSettingsModifier(state, onNavigateToSettings)
   // The elapsed-time readout (and, when present, the description below it) are rendered as an
   // overlay on this outer Box rather than inside ScreenScaffold's own content slot below: that
   // slot's coordinate space starts after ScreenScaffold's contentPadding (reserved for the
@@ -193,8 +189,8 @@ fun TimerScreen(
   Box(modifier = Modifier.fillMaxSize().then(swipeModifier)) {
     ScreenScaffold(
       scrollState = listState,
-      // Only Idle and Running anchor an action to the bezel; Loading/Error fall through to the
-      // default (no edge button).
+      // Only Idle and Running anchor an action to the bezel; Error falls through to the default
+      // (no edge button).
       edgeButton = {
         TimerEdgeButton(
           state = state,
@@ -323,7 +319,6 @@ private fun TimerContent(
 ) {
   Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
     when (state) {
-      is TimerUiState.Loading -> Text(text = stringResource(R.string.loading))
       is TimerUiState.Idle ->
         IdleContent(
           isRefreshing = isRefreshing,
@@ -341,11 +336,38 @@ private fun TimerContent(
   }
 }
 
-private fun Modifier.swipeToSettings(onNavigateToSettings: () -> Unit): Modifier =
+// Split out of TimerScreen itself just to keep that composable under detekt's LongMethod
+// threshold - the drag-offset Animatable and its CoroutineScope must still be remembered at the
+// call site's position in the composition, same as if this were inlined there.
+@Composable
+private fun swipeToSettingsModifier(
+  state: TimerUiState,
+  onNavigateToSettings: () -> Unit,
+): Modifier {
+  // Horizontal drag offset (px): snapped 1:1 to the finger while dragging, then sprung back to 0
+  // (or left to settle) on release - see swipeToSettings for where it's driven.
+  val dragOffsetPx = remember { Animatable(0f) }
+  val dragScope = rememberCoroutineScope()
+  val gestureModifier =
+    if (state is TimerUiState.Idle || state is TimerUiState.Running) {
+      Modifier.swipeToSettings(onNavigateToSettings, dragOffsetPx, dragScope)
+    } else {
+      Modifier
+    }
+  return gestureModifier.graphicsLayer { translationX = dragOffsetPx.value }
+}
+
+private fun Modifier.swipeToSettings(
+  onNavigateToSettings: () -> Unit,
+  dragOffsetPx: Animatable<Float, AnimationVector1D>,
+  dragScope: CoroutineScope,
+): Modifier =
   pointerInput(onNavigateToSettings) {
     val edgeGuardPx = SETTINGS_SWIPE_EDGE_GUARD.toPx()
     val thresholdPx = SETTINGS_SWIPE_THRESHOLD.toPx()
-    awaitEachGesture { awaitSettingsSwipe(edgeGuardPx, thresholdPx, onNavigateToSettings) }
+    awaitEachGesture {
+      awaitSettingsSwipe(edgeGuardPx, thresholdPx, dragOffsetPx, dragScope, onNavigateToSettings)
+    }
   }
 
 // Hand-rolled rather than detectHorizontalDragGestures: that helper consumes the touch as soon as
@@ -356,6 +378,8 @@ private fun Modifier.swipeToSettings(onNavigateToSettings: () -> Unit): Modifier
 private suspend fun AwaitPointerEventScope.awaitSettingsSwipe(
   edgeGuardPx: Float,
   thresholdPx: Float,
+  dragOffsetPx: Animatable<Float, AnimationVector1D>,
+  dragScope: CoroutineScope,
   onNavigateToSettings: () -> Unit,
 ) {
   val down = awaitFirstDown(requireUnconsumed = false)
@@ -367,13 +391,39 @@ private suspend fun AwaitPointerEventScope.awaitSettingsSwipe(
       overSlop = slop
     } ?: return
   var accumulated = overSlop
+  // AwaitPointerEventScope is a @RestrictsSuspension scope: nothing in this function, not just
+  // horizontalDrag's plain (non-suspend) onDrag callback below, can suspend on an unrelated
+  // Animatable directly - every snapTo/animateTo call has to go through dragScope instead.
+  // accumulated is already a running sum of real touch deltas, naturally bounded by the finger's
+  // travel on screen, so no extra clamp is needed before feeding it in.
+  dragScope.launch { dragOffsetPx.snapTo(accumulated) }
   var triggered = accumulated <= -thresholdPx
   if (triggered) onNavigateToSettings()
-  horizontalDrag(drag.id) { change ->
-    accumulated += change.positionChange().x
-    if (!triggered && accumulated <= -thresholdPx) {
-      triggered = true
-      onNavigateToSettings()
+  try {
+    horizontalDrag(drag.id) { change ->
+      accumulated += change.positionChange().x
+      dragScope.launch { dragOffsetPx.snapTo(accumulated) }
+      if (!triggered && accumulated <= -thresholdPx) {
+        triggered = true
+        onNavigateToSettings()
+      }
+    }
+  } finally {
+    // Also runs if this gesture is cancelled outright rather than ending via horizontalDrag's
+    // normal return - e.g. a background refresh resolving to Error mid-drag detaches this
+    // pointerInput node entirely. Without this, dragOffsetPx would be stranded at its last dragged
+    // value and the next screen would render permanently shifted. dragScope is the composition's
+    // own scope, not this (possibly cancelled) gesture coroutine, so the launch still runs.
+    if (triggered) {
+      // Navigation already fired; the destination's own entrance transition takes over next, so
+      // there's nothing to gain from animating the slide-out further than the drag itself did.
+      dragScope.launch { dragOffsetPx.animateTo(0f) }
+    } else {
+      // Confirms "recognized but not far enough" with a visible spring-back instead of silently
+      // snapping to rest.
+      dragScope.launch {
+        dragOffsetPx.animateTo(0f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
+      }
     }
   }
 }

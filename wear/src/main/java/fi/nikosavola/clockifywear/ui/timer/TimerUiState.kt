@@ -6,8 +6,6 @@ import java.time.Instant
 
 /** Per PLANNING.md "State management": one state per screen render, no partial/combined states. */
 sealed interface TimerUiState {
-  data object Loading : TimerUiState
-
   data class Idle(val hasDefaultProject: Boolean) : TimerUiState
 
   data class Running(

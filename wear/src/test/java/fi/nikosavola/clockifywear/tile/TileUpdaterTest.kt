@@ -16,9 +16,8 @@ private const val PROJECT_ID = "5f8a1b2c3d4e5f6a7b8c9d20"
  * that don't exist in a unit-test JVM, so Robolectric can't assert the actual Tile/complication
  * update mechanics fired. What's honestly testable at this layer: the method doesn't throw for any
  * [TimerUiState] variant TimerViewModel.applyEntry can actually emit ([TimerUiState.Running]/
- * [TimerUiState.Idle] - never [TimerUiState.Loading], applyEntry's only caller, so that transition
- * is not exercised), same ceiling OngoingTimerNotifierTest accepts for its own system-integration
- * surface.
+ * [TimerUiState.Idle]), same ceiling OngoingTimerNotifierTest accepts for its own
+ * system-integration surface.
  */
 @RunWith(RobolectricTestRunner::class)
 class TileUpdaterTest {

@@ -45,12 +45,20 @@ class TimerViewModel(
   private val clock: () -> Instant = Instant::now,
   private val onRunningStateChanged: (TimerUiState) -> Unit = {},
 ) : ViewModel() {
-  private val mutableUiState = MutableStateFlow<TimerUiState>(TimerUiState.Loading)
+  // Idle rather than a dedicated Loading state: shows the real Idle layout immediately instead of
+  // a blank interstitial, with mutableIsRefreshing starting true so the refresh icon is already
+  // spinning until onForeground()'s loadRunning() resolves the actual state. hasDefaultProject
+  // false just means a Play tap in that split second would route to "Choose project" instead of
+  // instantly starting - harmless and rare, not a crash or data-loss risk.
+  private val mutableUiState =
+    MutableStateFlow<TimerUiState>(TimerUiState.Idle(hasDefaultProject = false))
   val uiState: StateFlow<TimerUiState> = mutableUiState.asStateFlow()
 
   // Separate from uiState: "a refresh is in flight" is orthogonal to which state is currently
   // showing (Idle/Running/Error all keep rendering while a background refresh reloads them).
-  private val mutableIsRefreshing = MutableStateFlow(false)
+  // Starts true so the refresh icon is already spinning on the very first frame, before
+  // onForeground() even runs - see mutableUiState's comment above.
+  private val mutableIsRefreshing = MutableStateFlow(true)
   val isRefreshing: StateFlow<Boolean> = mutableIsRefreshing.asStateFlow()
 
   // Shared by start()/stop(): a double-tap on the EdgeButton within one network round trip would

@@ -392,7 +392,8 @@ class TimerViewModelTest {
           .setBodyDelay(IN_FLIGHT_RESPONSE_DELAY_MS, TimeUnit.MILLISECONDS)
       )
       val viewModel = TimerViewModel(repository, settingsStore)
-      assertEquals(false, viewModel.isRefreshing.value)
+      // Starts true (refresh icon already spinning) before onForeground() even runs.
+      assertEquals(true, viewModel.isRefreshing.value)
 
       val job = viewModel.onForeground()
       runCurrent() // runs the coroutine up to the real network suspension point
