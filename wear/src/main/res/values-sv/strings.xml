@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClockifyWearOS</string>
+
+    <string name="loading">Läser in…</string>
+
+    <string name="settings_title">Inställningar</string>
+    <string name="settings_api_key_label">API-nyckel</string>
+    <string name="settings_clipboard_hint">Tips: kopiera nyckeln på telefonen och tryck sedan på Klistra in. Telefonens urklipp synkas till klockan.</string>
+    <string name="settings_paste_button">Klistra in</string>
+    <string name="settings_sign_in_button">Logga in</string>
+    <string name="settings_sign_out_button">Logga ut</string>
+    <string name="settings_signing_in">Loggar in…</string>
+    <string name="settings_signed_in_workspace">Arbetsyta: %1$s</string>
+    <string name="settings_signed_in_account">Inloggad som %1$s</string>
+
+    <string name="timer_start_button">Starta</string>
+    <string name="timer_stop_button">Stoppa</string>
+    <string name="timer_no_project_label">Inget projekt</string>
+    <string name="timer_go_to_settings_button">Gå till inställningar</string>
+    <string name="timer_retry_button">Försök igen</string>
+    <string name="timer_choose_project_button">Välj projekt</string>
+    <string name="timer_recent_button">Senaste</string>
+    <string name="timer_refresh_button">Uppdatera</string>
+    <string name="notification_timer_running_title">Tidtagning pågår</string>
+
+    <string name="tile_title">Clockify</string>
+    <string name="tile_no_timer_running">Ingen tidtagning igång</string>
+    <string name="complication_idle_label">Vila</string>
+    <string name="complication_preview_time">12:34</string>
+    <string name="complication_preview_project">Kund</string>
+
+    <string name="project_picker_title">Välj projekt</string>
+    <string name="project_picker_empty">Inga projekt hittades. Lägg till ett i Clockifys webbapp.</string>
+
+    <string name="task_picker_no_task_option">Ingen specifik uppgift</string>
+
+    <string name="recents_title">Senaste poster</string>
+    <string name="recents_empty">Inga senaste poster än.</string>
+
+    <string name="error_unauthorized">Ogiltig API-nyckel. Logga in igen.</string>
+    <string name="error_rate_limited">Clockify begränsar antalet förfrågningar. Försök igen strax.</string>
+    <string name="error_offline">Ingen nätverksanslutning.</string>
+    <string name="error_http">Något gick fel (kod %1$d).</string>
+    <string name="error_parse">Oväntat svar från Clockify.</string>
+    <string name="error_no_workspace">Ingen arbetsyta hittades för det här kontot.</string>
+    <string name="error_not_signed_in">Logga in först.</string>
+</resources>

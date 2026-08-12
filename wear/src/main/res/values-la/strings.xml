@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClockifyWearOS</string>
+
+    <string name="loading">Oneratur…</string>
+
+    <string name="settings_title">Optiones</string>
+    <string name="settings_api_key_label">Clavis API</string>
+    <string name="settings_clipboard_hint">Consilium: exscribe clavem in telephono tuo, deinde tange Insere. Tabula transcriptionis telephoni tui cum hoc horologio manuali concordat.</string>
+    <string name="settings_paste_button">Insere</string>
+    <string name="settings_sign_in_button">Ingredere</string>
+    <string name="settings_sign_out_button">Exi</string>
+    <string name="settings_signing_in">Ingressio…</string>
+    <string name="settings_signed_in_workspace">Spatium laboris: %1$s</string>
+    <string name="settings_signed_in_account">Ingressus es ut %1$s</string>
+
+    <string name="timer_start_button">Incipe</string>
+    <string name="timer_stop_button">Desine</string>
+    <string name="timer_no_project_label">Nullum inceptum</string>
+    <string name="timer_go_to_settings_button">Vade ad optiones</string>
+    <string name="timer_retry_button">Iterum conare</string>
+    <string name="timer_choose_project_button">Elige inceptum</string>
+    <string name="timer_recent_button">Recentia</string>
+    <string name="timer_refresh_button">Renova</string>
+    <string name="notification_timer_running_title">Chronometrum currit</string>
+
+    <string name="tile_title">Clockify</string>
+    <string name="tile_no_timer_running">Nullum chronometrum currit</string>
+    <string name="complication_idle_label">Otiosum</string>
+    <string name="complication_preview_time">12:34</string>
+    <string name="complication_preview_project">Cliens</string>
+
+    <string name="project_picker_title">Elige inceptum</string>
+    <string name="project_picker_empty">Nullum inceptum inventum est. Unum adde in applicatione retiali Clockify.</string>
+
+    <string name="task_picker_no_task_option">Nullum negotium speciale</string>
+
+    <string name="recents_title">Acta recentia</string>
+    <string name="recents_empty">Nulla acta recentia adhuc sunt.</string>
+
+    <string name="error_unauthorized">Clavis API invalida est. Iterum ingredere.</string>
+    <string name="error_rate_limited">Clockify postulationes nunc coercet. Post breve tempus iterum conare.</string>
+    <string name="error_offline">Nulla est retis conexio.</string>
+    <string name="error_http">Aliquid mali accidit (numerus %1$d).</string>
+    <string name="error_parse">Responsum inexpectatum a Clockify.</string>
+    <string name="error_no_workspace">Nullum spatium laboris pro hac ratione inventum est.</string>
+    <string name="error_not_signed_in">Prius ingredere.</string>
+</resources>

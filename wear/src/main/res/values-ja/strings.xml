@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClockifyWearOS</string>
+
+    <string name="loading">読み込み中…</string>
+
+    <string name="settings_title">設定</string>
+    <string name="settings_api_key_label">APIキー</string>
+    <string name="settings_clipboard_hint">ヒント: 電話でキーをコピーしてから「貼り付け」をタップしてください。電話のクリップボードはこの時計と同期されます。</string>
+    <string name="settings_paste_button">貼り付け</string>
+    <string name="settings_sign_in_button">サインイン</string>
+    <string name="settings_sign_out_button">サインアウト</string>
+    <string name="settings_signing_in">サインイン中…</string>
+    <string name="settings_signed_in_workspace">ワークスペース: %1$s</string>
+    <string name="settings_signed_in_account">%1$s でサインイン中</string>
+
+    <string name="timer_start_button">開始</string>
+    <string name="timer_stop_button">停止</string>
+    <string name="timer_no_project_label">プロジェクトなし</string>
+    <string name="timer_go_to_settings_button">設定を開く</string>
+    <string name="timer_retry_button">再試行</string>
+    <string name="timer_choose_project_button">プロジェクトを選択</string>
+    <string name="timer_recent_button">最近</string>
+    <string name="timer_refresh_button">更新</string>
+    <string name="notification_timer_running_title">タイマー実行中</string>
+
+    <string name="tile_title">Clockify</string>
+    <string name="tile_no_timer_running">タイマーは停止中</string>
+    <string name="complication_idle_label">待機中</string>
+    <string name="complication_preview_time">12:34</string>
+    <string name="complication_preview_project">クライアント</string>
+
+    <string name="project_picker_title">プロジェクトを選択</string>
+    <string name="project_picker_empty">プロジェクトが見つかりません。Clockifyのウェブアプリで追加してください。</string>
+
+    <string name="task_picker_no_task_option">タスクなし</string>
+
+    <string name="recents_title">最近の記録</string>
+    <string name="recents_empty">最近の記録はまだありません。</string>
+
+    <string name="error_unauthorized">APIキーが無効です。再度サインインしてください。</string>
+    <string name="error_rate_limited">Clockifyがリクエストを制限しています。しばらくしてから再試行してください。</string>
+    <string name="error_offline">ネットワークに接続されていません。</string>
+    <string name="error_http">エラーが発生しました(コード %1$d)。</string>
+    <string name="error_parse">Clockifyから予期しない応答がありました。</string>
+    <string name="error_no_workspace">このアカウントのワークスペースが見つかりません。</string>
+    <string name="error_not_signed_in">先にサインインしてください。</string>
+</resources>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClockifyWearOS</string>
+
+    <string name="loading">Wird geladen…</string>
+
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_api_key_label">API-Schlüssel</string>
+    <string name="settings_clipboard_hint">Tipp: Kopiere den Schlüssel auf dem Telefon und tippe dann auf Einfügen. Die Zwischenablage des Telefons wird mit dieser Uhr synchronisiert.</string>
+    <string name="settings_paste_button">Einfügen</string>
+    <string name="settings_sign_in_button">Anmelden</string>
+    <string name="settings_sign_out_button">Abmelden</string>
+    <string name="settings_signing_in">Anmeldung läuft…</string>
+    <string name="settings_signed_in_workspace">Arbeitsbereich: %1$s</string>
+    <string name="settings_signed_in_account">Angemeldet als %1$s</string>
+
+    <string name="timer_start_button">Start</string>
+    <string name="timer_stop_button">Stopp</string>
+    <string name="timer_no_project_label">Kein Projekt</string>
+    <string name="timer_go_to_settings_button">Zu den Einstellungen</string>
+    <string name="timer_retry_button">Erneut versuchen</string>
+    <string name="timer_choose_project_button">Projekt wählen</string>
+    <string name="timer_recent_button">Zuletzt</string>
+    <string name="timer_refresh_button">Aktualisieren</string>
+    <string name="notification_timer_running_title">Timer läuft</string>
+
+    <string name="tile_title">Clockify</string>
+    <string name="tile_no_timer_running">Kein Timer aktiv</string>
+    <string name="complication_idle_label">Inaktiv</string>
+    <string name="complication_preview_time">12:34</string>
+    <string name="complication_preview_project">Kunde</string>
+
+    <string name="project_picker_title">Projekt wählen</string>
+    <string name="project_picker_empty">Keine Projekte gefunden. Füge eines in der Clockify-Web-App hinzu.</string>
+
+    <string name="task_picker_no_task_option">Keine bestimmte Aufgabe</string>
+
+    <string name="recents_title">Letzte Einträge</string>
+    <string name="recents_empty">Noch keine letzten Einträge.</string>
+
+    <string name="error_unauthorized">Ungültiger API-Schlüssel. Bitte erneut anmelden.</string>
+    <string name="error_rate_limited">Clockify begrenzt derzeit die Anfragen. Versuche es gleich noch einmal.</string>
+    <string name="error_offline">Keine Netzwerkverbindung.</string>
+    <string name="error_http">Etwas ist schiefgelaufen (Code %1$d).</string>
+    <string name="error_parse">Unerwartete Antwort von Clockify.</string>
+    <string name="error_no_workspace">Für dieses Konto wurde kein Arbeitsbereich gefunden.</string>
+    <string name="error_not_signed_in">Bitte zuerst anmelden.</string>
+</resources>

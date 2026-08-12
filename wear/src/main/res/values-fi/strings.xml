@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClockifyWearOS</string>
+
+    <string name="loading">Latautuu…</string>
+
+    <string name="settings_title">Asetukset</string>
+    <string name="settings_api_key_label">API-avain</string>
+    <string name="settings_clipboard_hint">Vinkki: kopioi avain puhelimessasi ja napauta sitten Liitä. Puhelimesi leikepöytä synkronoituu tähän kelloon.</string>
+    <string name="settings_paste_button">Liitä</string>
+    <string name="settings_sign_in_button">Kirjaudu sisään</string>
+    <string name="settings_sign_out_button">Kirjaudu ulos</string>
+    <string name="settings_signing_in">Kirjaudutaan sisään…</string>
+    <string name="settings_signed_in_workspace">Työtila: %1$s</string>
+    <string name="settings_signed_in_account">Kirjautunut: %1$s</string>
+
+    <string name="timer_start_button">Aloita</string>
+    <string name="timer_stop_button">Lopeta</string>
+    <string name="timer_no_project_label">Ei projektia</string>
+    <string name="timer_go_to_settings_button">Siirry asetuksiin</string>
+    <string name="timer_retry_button">Yritä uudelleen</string>
+    <string name="timer_choose_project_button">Valitse projekti</string>
+    <string name="timer_recent_button">Viimeisimmät</string>
+    <string name="timer_refresh_button">Päivitä</string>
+    <string name="notification_timer_running_title">Ajastin käynnissä</string>
+
+    <string name="tile_title">Clockify</string>
+    <string name="tile_no_timer_running">Ei ajastinta käynnissä</string>
+    <string name="complication_idle_label">Vapaana</string>
+    <string name="complication_preview_time">12:34</string>
+    <string name="complication_preview_project">Asiakas</string>
+
+    <string name="project_picker_title">Valitse projekti</string>
+    <string name="project_picker_empty">Projekteja ei löytynyt. Lisää projekti Clockifyn verkkosovelluksessa.</string>
+
+    <string name="task_picker_no_task_option">Ei tehtävää</string>
+
+    <string name="recents_title">Viimeisimmät kirjaukset</string>
+    <string name="recents_empty">Ei viimeaikaisia kirjauksia.</string>
+
+    <string name="error_unauthorized">Virheellinen API-avain. Kirjaudu sisään uudelleen.</string>
+    <string name="error_rate_limited">Clockify rajoittaa pyyntöjä. Yritä pian uudelleen.</string>
+    <string name="error_offline">Ei verkkoyhteyttä.</string>
+    <string name="error_http">Tapahtui virhe (koodi %1$d).</string>
+    <string name="error_parse">Odottamaton vastaus Clockifystä.</string>
+    <string name="error_no_workspace">Tälle tilille ei löytynyt työtilaa.</string>
+    <string name="error_not_signed_in">Kirjaudu sisään ensin.</string>
+</resources>

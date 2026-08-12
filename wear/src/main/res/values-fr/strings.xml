@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClockifyWearOS</string>
+
+    <string name="loading">Chargement…</string>
+
+    <string name="settings_title">Paramètres</string>
+    <string name="settings_api_key_label">Clé API</string>
+    <string name="settings_clipboard_hint">Astuce : copiez la clé sur votre téléphone, puis appuyez sur Coller. Le presse-papiers de votre téléphone se synchronise avec cette montre.</string>
+    <string name="settings_paste_button">Coller</string>
+    <string name="settings_sign_in_button">Se connecter</string>
+    <string name="settings_sign_out_button">Se déconnecter</string>
+    <string name="settings_signing_in">Connexion en cours…</string>
+    <string name="settings_signed_in_workspace">Espace de travail : %1$s</string>
+    <string name="settings_signed_in_account">Connecté en tant que %1$s</string>
+
+    <string name="timer_start_button">Démarrer</string>
+    <string name="timer_stop_button">Arrêter</string>
+    <string name="timer_no_project_label">Aucun projet</string>
+    <string name="timer_go_to_settings_button">Aller aux paramètres</string>
+    <string name="timer_retry_button">Réessayer</string>
+    <string name="timer_choose_project_button">Choisir un projet</string>
+    <string name="timer_recent_button">Récents</string>
+    <string name="timer_refresh_button">Actualiser</string>
+    <string name="notification_timer_running_title">Minuteur en cours</string>
+
+    <string name="tile_title">Clockify</string>
+    <string name="tile_no_timer_running">Aucun minuteur en cours</string>
+    <string name="complication_idle_label">Inactif</string>
+    <string name="complication_preview_time">12:34</string>
+    <string name="complication_preview_project">Client</string>
+
+    <string name="project_picker_title">Choisir un projet</string>
+    <string name="project_picker_empty">Aucun projet trouvé. Ajoutez-en un dans l\'application web Clockify.</string>
+
+    <string name="task_picker_no_task_option">Aucune tâche spécifique</string>
+
+    <string name="recents_title">Entrées récentes</string>
+    <string name="recents_empty">Aucune entrée récente pour l\'instant.</string>
+
+    <string name="error_unauthorized">Clé API invalide. Veuillez vous reconnecter.</string>
+    <string name="error_rate_limited">Clockify limite temporairement les requêtes. Réessayez dans un instant.</string>
+    <string name="error_offline">Aucune connexion réseau.</string>
+    <string name="error_http">Une erreur est survenue (code %1$d).</string>
+    <string name="error_parse">Réponse inattendue de Clockify.</string>
+    <string name="error_no_workspace">Aucun espace de travail trouvé pour ce compte.</string>
+    <string name="error_not_signed_in">Veuillez vous connecter d\'abord.</string>
+</resources>

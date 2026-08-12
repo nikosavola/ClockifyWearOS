@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ClockifyWearOS</string>
+
+    <string name="loading">載入中…</string>
+
+    <string name="settings_title">設定</string>
+    <string name="settings_api_key_label">API 金鑰</string>
+    <string name="settings_clipboard_hint">提示：先在手機上複製金鑰，然後點選「貼上」。手機的剪貼簿會與這支手錶同步。</string>
+    <string name="settings_paste_button">貼上</string>
+    <string name="settings_sign_in_button">登入</string>
+    <string name="settings_sign_out_button">登出</string>
+    <string name="settings_signing_in">登入中…</string>
+    <string name="settings_signed_in_workspace">工作區：%1$s</string>
+    <string name="settings_signed_in_account">已登入：%1$s</string>
+
+    <string name="timer_start_button">開始</string>
+    <string name="timer_stop_button">停止</string>
+    <string name="timer_no_project_label">無專案</string>
+    <string name="timer_go_to_settings_button">前往設定</string>
+    <string name="timer_retry_button">重試</string>
+    <string name="timer_choose_project_button">選擇專案</string>
+    <string name="timer_recent_button">最近</string>
+    <string name="timer_refresh_button">重新整理</string>
+    <string name="notification_timer_running_title">計時器執行中</string>
+
+    <string name="tile_title">Clockify</string>
+    <string name="tile_no_timer_running">目前沒有執行中的計時器</string>
+    <string name="complication_idle_label">閒置</string>
+    <string name="complication_preview_time">12:34</string>
+    <string name="complication_preview_project">客戶</string>
+
+    <string name="project_picker_title">選擇專案</string>
+    <string name="project_picker_empty">找不到任何專案，請在 Clockify 網頁應用程式中新增一個。</string>
+
+    <string name="task_picker_no_task_option">無特定任務</string>
+
+    <string name="recents_title">最近的記錄</string>
+    <string name="recents_empty">目前沒有最近的記錄。</string>
+
+    <string name="error_unauthorized">API 金鑰無效，請重新登入。</string>
+    <string name="error_rate_limited">Clockify 目前限制了請求次數，請稍後再試。</string>
+    <string name="error_offline">沒有網路連線。</string>
+    <string name="error_http">發生錯誤（代碼 %1$d）。</string>
+    <string name="error_parse">Clockify 傳回了非預期的回應。</string>
+    <string name="error_no_workspace">找不到此帳戶對應的工作區。</string>
+    <string name="error_not_signed_in">請先登入。</string>
+</resources>
