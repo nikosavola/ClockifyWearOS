@@ -1,10 +1,54 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
   // kotlin.android removed: AGP 9 built-in Kotlin (version pinned in the root buildscript
   // classpath).
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
+  alias(libs.plugins.play.publisher)
 }
+
+// Release signing: a local gitignored keystore.properties file takes priority (for a developer
+// building a signed release locally without exporting env vars), falling back to the
+// RELEASE_KEYSTORE_PATH/RELEASE_KEYSTORE_PASSWORD/RELEASE_KEY_ALIAS/RELEASE_KEY_PASSWORD env vars
+// CI injects, falling back to leaving `release` unsigned if neither is present. This keeps
+// assembleDebug and day-to-day dev working with zero signing setup. See docs/RELEASING.md.
+val keystoreProperties =
+  Properties().apply {
+    val propertiesFile = rootProject.file("keystore.properties")
+    if (propertiesFile.exists()) {
+      propertiesFile.inputStream().use { load(it) }
+    }
+  }
+
+fun releaseSigningValue(propertyKey: String, envVar: String): String? =
+  keystoreProperties.getProperty(propertyKey) ?: System.getenv(envVar)
+
+// storeFile is a path, not a password/alias; keep it absolute (env: RELEASE_KEYSTORE_PATH, or
+// storeFile= in keystore.properties) since it resolves relative to wear/, not the repo root.
+val releaseStoreFilePath = releaseSigningValue("storeFile", "RELEASE_KEYSTORE_PATH")
+val releaseStorePassword = releaseSigningValue("storePassword", "RELEASE_KEYSTORE_PASSWORD")
+val releaseKeyAlias = releaseSigningValue("keyAlias", "RELEASE_KEY_ALIAS")
+val releaseKeyPassword = releaseSigningValue("keyPassword", "RELEASE_KEY_PASSWORD")
+
+val releaseSigningValues =
+  listOf(
+    "storeFile" to releaseStoreFilePath,
+    "storePassword" to releaseStorePassword,
+    "keyAlias" to releaseKeyAlias,
+    "keyPassword" to releaseKeyPassword,
+  )
+val releaseSigningPresentCount = releaseSigningValues.count { it.second != null }
+
+// A typo'd/partially-set secret should fail loudly at configuration time, not silently produce
+// an unsigned artifact that then fails confusingly at the Play upload step.
+if (releaseSigningPresentCount in 1..3) {
+  val missing = releaseSigningValues.filter { it.second == null }.map { it.first }
+  error("Release signing is partially configured; missing: $missing. Set all four or none.")
+}
+
+val hasReleaseSigningConfig = releaseSigningPresentCount == 4
 
 android {
   namespace = "fi.nikosavola.clockifywear"
@@ -18,11 +62,25 @@ android {
     versionName = "0.1.0"
   }
 
+  signingConfigs {
+    if (hasReleaseSigningConfig) {
+      create("release") {
+        storeFile = file(releaseStoreFilePath!!)
+        storePassword = releaseStorePassword
+        keyAlias = releaseKeyAlias
+        keyPassword = releaseKeyPassword
+      }
+    }
+  }
+
   buildTypes {
     release {
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      if (hasReleaseSigningConfig) {
+        signingConfig = signingConfigs.getByName("release")
+      }
     }
   }
   compileOptions {
@@ -36,6 +94,14 @@ android {
 }
 
 kotlin { jvmToolchain(21) }
+
+// Uploads an already-built, already-signed AAB to the Play Store; release.yml points this at the
+// AAB the build job produced via --artifact-dir rather than letting this plugin build one itself.
+// Requires the release signingConfig above - this plugin only publishes, it never signs.
+// CI credentials come from the ANDROID_PUBLISHER_CREDENTIALS env var (set by release.yml from the
+// PLAY_SERVICE_ACCOUNT_JSON secret); serviceAccountCredentials is deliberately left unset since
+// that's the local-dev file-path option, not the CI one.
+play { track.set("internal") }
 
 dependencies {
   implementation(libs.kotlin.stdlib)

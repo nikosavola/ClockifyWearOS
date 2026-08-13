@@ -13,6 +13,10 @@ plugins {
   // `kotlin` extension). Version is pinned via the buildscript classpath above.
   alias(libs.plugins.compose.compiler) apply false
   alias(libs.plugins.kotlin.serialization) apply false
+  // Module-only (wear/build.gradle.kts), same apply-false-at-root pattern as the plugins above:
+  // it uploads already-signed release artifacts to the Play Store and doesn't sign anything
+  // itself (see docs/RELEASING.md).
+  alias(libs.plugins.play.publisher) apply false
   alias(libs.plugins.ktfmt) apply false
   alias(libs.plugins.ktlint) apply false
   alias(libs.plugins.detekt) apply false
