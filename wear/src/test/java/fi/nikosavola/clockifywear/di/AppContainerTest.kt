@@ -3,6 +3,7 @@ package fi.nikosavola.clockifywear.di
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.test.core.app.ApplicationProvider
+import fi.nikosavola.clockifywear.data.FakeApiKeyCipher
 import fi.nikosavola.clockifywear.data.SettingsStore
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
@@ -46,14 +47,19 @@ class AppContainerTest {
       PreferenceDataStoreFactory.create(
         produceFile = { tempFolder.newFile("settings.preferences_pb") }
       )
-    SettingsStore(dataStore).apply {
+    SettingsStore(dataStore, FakeApiKeyCipher()).apply {
       setApiKey("cold-start-key")
       setWorkspaceId("ws-1")
     }
 
     val context = ApplicationProvider.getApplicationContext<Context>()
     val container =
-      AppContainer(context, baseUrl = server.url("/").toString(), dataStore = dataStore)
+      AppContainer(
+        context,
+        baseUrl = server.url("/").toString(),
+        dataStore = dataStore,
+        apiKeyCipher = FakeApiKeyCipher(),
+      )
     container.settingsPrimed.await()
 
     server.enqueue(MockResponse().setBody("[]"))

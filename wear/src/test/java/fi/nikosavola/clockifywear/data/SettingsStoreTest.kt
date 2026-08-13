@@ -1,8 +1,13 @@
 package fi.nikosavola.clockifywear.data
 
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
@@ -15,15 +20,16 @@ import org.robolectric.RobolectricTestRunner
 class SettingsStoreTest {
   @get:Rule val tempFolder = TemporaryFolder()
 
+  private lateinit var dataStore: DataStore<Preferences>
   private lateinit var store: SettingsStore
 
   @Before
   fun setUp() {
-    val dataStore =
+    dataStore =
       PreferenceDataStoreFactory.create(
         produceFile = { tempFolder.newFile("settings.preferences_pb") }
       )
-    store = SettingsStore(dataStore)
+    store = SettingsStore(dataStore, FakeApiKeyCipher())
   }
 
   @Test
@@ -100,6 +106,16 @@ class SettingsStoreTest {
     }
 
   @Test
+  fun `api key is passed through apiKeyCipher before it reaches the DataStore`() = runTest {
+    store.setApiKey("secret-key")
+
+    val raw = dataStore.data.first()[stringPreferencesKey("api_key")]
+
+    assertNotEquals("secret-key", raw)
+    assertEquals("secret-key", FakeApiKeyCipher().decrypt(raw!!))
+  }
+
+  @Test
   fun `apiKeySupplier is primed by reading settings after a cold start`() = runTest {
     // DataStore allows only one live instance per file, so this reuses the same DataStore to
     // simulate the scenario without opening the file a second time: a fresh SettingsStore
@@ -109,9 +125,9 @@ class SettingsStoreTest {
       PreferenceDataStoreFactory.create(
         produceFile = { tempFolder.newFile("restart.preferences_pb") }
       )
-    SettingsStore(dataStore).setApiKey("saved-key")
+    SettingsStore(dataStore, FakeApiKeyCipher()).setApiKey("saved-key")
 
-    val restarted = SettingsStore(dataStore)
+    val restarted = SettingsStore(dataStore, FakeApiKeyCipher())
     assertNull(restarted.apiKeySupplier())
 
     assertEquals("saved-key", restarted.currentSettings().apiKey)

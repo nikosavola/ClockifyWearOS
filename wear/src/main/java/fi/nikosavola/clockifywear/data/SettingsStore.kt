@@ -31,10 +31,13 @@ data class Settings(
  * Wraps a Preferences [DataStore] supplied by the caller (never a `Context` directly) so tests can
  * point it at a temp file.
  *
- * The API key is stored unencrypted. `androidx.security.crypto` is deprecated and Keystore-backed
- * encryption is low value for a device already gated by its own lock screen; accepted trade-off.
+ * The API key is encrypted at rest with [apiKeyCipher] before it reaches [dataStore]; see
+ * [ApiKeyCipher] for why and how.
  */
-class SettingsStore(private val dataStore: DataStore<Preferences>) {
+class SettingsStore(
+  private val dataStore: DataStore<Preferences>,
+  private val apiKeyCipher: ApiKeyCipher = AndroidKeystoreApiKeyCipher(),
+) {
   private val apiKeyKey = stringPreferencesKey("api_key")
   private val userIdKey = stringPreferencesKey("user_id")
   private val workspaceIdKey = stringPreferencesKey("workspace_id")
@@ -55,7 +58,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
   val settings: Flow<Settings> =
     dataStore.data.map { prefs ->
       Settings(
-          apiKey = prefs[apiKeyKey],
+          apiKey = prefs[apiKeyKey]?.let(apiKeyCipher::decrypt),
           userId = prefs[userIdKey],
           workspaceId = prefs[workspaceIdKey],
           defaultProjectId = prefs[defaultProjectIdKey],
@@ -73,7 +76,7 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
 
   suspend fun setApiKey(apiKey: String?) {
     cachedApiKey = apiKey
-    setOrRemove(apiKeyKey, apiKey)
+    setOrRemove(apiKeyKey, apiKey?.let(apiKeyCipher::encrypt))
   }
 
   suspend fun setUserId(userId: String?) = setOrRemove(userIdKey, userId)

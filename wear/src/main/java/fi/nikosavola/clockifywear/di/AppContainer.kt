@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import fi.nikosavola.clockifywear.data.AndroidKeystoreApiKeyCipher
+import fi.nikosavola.clockifywear.data.ApiKeyCipher
 import fi.nikosavola.clockifywear.data.ClockifyRepository
 import fi.nikosavola.clockifywear.data.ProjectCache
 import fi.nikosavola.clockifywear.data.Settings
@@ -35,6 +37,8 @@ private const val PROJECT_CACHE_FILE_NAME = "projects.json"
  * @param dataStore overridable so tests can reuse one DataStore instance across two
  *   [SettingsStore]s to simulate a cold restart (see [settingsPrimed] below); production always
  *   uses the default.
+ * @param apiKeyCipher overridable because the real Android Keystore provider isn't available under
+ *   Robolectric/JVM unit tests; production always uses the default.
  */
 class AppContainer(
   context: Context,
@@ -43,10 +47,11 @@ class AppContainer(
     PreferenceDataStoreFactory.create(
       produceFile = { File(context.filesDir, SETTINGS_DATASTORE_FILE_NAME) }
     ),
+  apiKeyCipher: ApiKeyCipher = AndroidKeystoreApiKeyCipher(),
 ) {
   private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-  val settingsStore: SettingsStore = SettingsStore(dataStore)
+  val settingsStore: SettingsStore = SettingsStore(dataStore, apiKeyCipher)
 
   private val projectCache: ProjectCache =
     ProjectCache(File(context.filesDir, PROJECT_CACHE_FILE_NAME))

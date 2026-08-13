@@ -3,6 +3,7 @@ package fi.nikosavola.clockifywear.ui.settings
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import fi.nikosavola.clockifywear.data.ClockifyError
 import fi.nikosavola.clockifywear.data.ClockifyRepository
+import fi.nikosavola.clockifywear.data.FakeApiKeyCipher
 import fi.nikosavola.clockifywear.data.ProjectCache
 import fi.nikosavola.clockifywear.data.SettingsStore
 import fi.nikosavola.clockifywear.data.api.clockifyJson
@@ -60,7 +61,8 @@ class SettingsViewModelTest {
       SettingsStore(
         PreferenceDataStoreFactory.create(
           produceFile = { tempFolder.newFile("settings.preferences_pb") }
-        )
+        ),
+        FakeApiKeyCipher(),
       )
     val projectCache = ProjectCache(File(tempFolder.root, "projects.json"))
     repository = ClockifyRepository(api, settingsStore, projectCache)

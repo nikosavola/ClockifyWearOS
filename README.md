@@ -61,9 +61,6 @@ accepts a paste from your phone's clipboard, which syncs to the watch automatica
   official Marketplace partner with a backend of its own, so the only way to sign in is typing
   or pasting an API key directly on the watch. This is a rougher experience than typical Wear OS
   sign-in flows, and is an accepted trade-off rather than an oversight.
-- **API key stored unencrypted.** `androidx.security.crypto` is deprecated, and Keystore-backed
-  encryption adds little value on a device already gated by its own lock screen; also an accepted
-  trade-off.
 - **No phone companion app.** Everything, including sign-in, happens on the watch itself.
 
 ## Contributing

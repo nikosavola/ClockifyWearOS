@@ -36,12 +36,16 @@ exceptions:
   # absent cache; the returned value already carries everything a caller acts on, and this data
   # layer has no logging sink to hand the original exception to. Listed by type rather than
   # switching the rule off, so a genuinely swallowed exception of any other type still fails.
+  # GeneralSecurityException/IllegalArgumentException are ApiKeyCipher.decrypt's same pattern: any
+  # decryption failure (corrupted data, a keystore wiped since it was written) maps to null.
   SwallowedException:
     active: true
     ignoredExceptionTypes:
       - 'DateTimeParseException'
+      - 'GeneralSecurityException'
       - 'HttpException'
       - 'IOException'
+      - 'IllegalArgumentException'
       - 'InterruptedException'
       - 'MalformedURLException'
       - 'NumberFormatException'

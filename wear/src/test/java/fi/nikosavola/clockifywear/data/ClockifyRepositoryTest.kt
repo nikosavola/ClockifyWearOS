@@ -87,7 +87,8 @@ class ClockifyRepositoryTest {
       SettingsStore(
         PreferenceDataStoreFactory.create(
           produceFile = { tempFolder.newFile("settings.preferences_pb") }
-        )
+        ),
+        FakeApiKeyCipher(),
       )
     projectCache = ProjectCache(File(tempFolder.root, "projects.json")) { now }
     repository = ClockifyRepository(api, settingsStore, projectCache) { now }
