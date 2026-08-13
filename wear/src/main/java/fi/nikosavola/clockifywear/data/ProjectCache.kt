@@ -17,8 +17,8 @@ data class CachedProjects(
   val projects: List<ProjectDto>,
 )
 
-// PLANNING.md "Cache staleness": past this age the picker still renders the cache instantly but
-// a refresh should be triggered in the background.
+// Past this age the picker still renders the cache instantly but a refresh should be triggered
+// in the background.
 private val CACHE_STALENESS_THRESHOLD: Duration = Duration.ofHours(6)
 
 /**

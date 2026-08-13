@@ -32,8 +32,7 @@ data class Settings(
  * point it at a temp file.
  *
  * The API key is stored unencrypted. `androidx.security.crypto` is deprecated and Keystore-backed
- * encryption is low value for a device already gated by its own lock screen (see PLANNING.md open
- * question 2); accepted trade-off.
+ * encryption is low value for a device already gated by its own lock screen; accepted trade-off.
  */
 class SettingsStore(private val dataStore: DataStore<Preferences>) {
   private val apiKeyKey = stringPreferencesKey("api_key")

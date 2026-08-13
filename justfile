@@ -2,8 +2,7 @@
 #
 # Every gradle recipe caps parallelism via max_workers (default 2, override with
 # JUST_MAX_WORKERS): a workstation preference, not a project requirement, so it lives here rather
-# than in gradle.properties (see HANDOFF.md "landmine 2" on why machine tuning stays out of
-# committed Gradle files).
+# than in gradle.properties, which is committed and shared across machines.
 
 max_workers := env('JUST_MAX_WORKERS', '2')
 sdk := env('ANDROID_HOME', env('ANDROID_SDK_ROOT', env('HOME') + '/Android/Sdk'))
@@ -99,7 +98,7 @@ logcat:
 uninstall:
     {{ sdk }}/platform-tools/adb uninstall {{ package }}
 
-# Boot a Wear OS emulator; plain `-avd` alone segfaults here, see HANDOFF.md section 8.1
+# Boot a Wear OS emulator; plain `-avd` alone segfaults on GPU/display init here, hence the flags
 [group('emulator')]
 emulator avd='wear5':
     {{ sdk }}/emulator/emulator -avd {{ avd }} -no-window -no-audio -no-boot-anim \

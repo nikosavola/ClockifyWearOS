@@ -3,7 +3,7 @@ package fi.nikosavola.clockifywear.ui.projects
 import fi.nikosavola.clockifywear.data.ClockifyError
 import fi.nikosavola.clockifywear.data.api.dto.ProjectDto
 
-/** Per PLANNING.md "State management": one state per screen render, no partial/combined states. */
+/** One state per screen render, no partial/combined states. */
 sealed interface ProjectPickerUiState {
   data object Loading : ProjectPickerUiState
 

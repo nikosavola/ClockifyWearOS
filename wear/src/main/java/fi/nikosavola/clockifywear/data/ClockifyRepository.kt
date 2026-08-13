@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
 
-// PLANNING.md "Clockify API sketch".
 internal const val PROJECTS_PAGE_SIZE = 200
 
 // Bounds pagination so a server that never returns a short page (broken filtering, an infinite
@@ -25,7 +24,7 @@ internal const val PROJECTS_PAGE_SIZE = 200
 // beyond any real Clockify workspace.
 internal const val MAX_PROJECT_PAGES = 25
 
-// PLANNING.md "Recents shown": 10 *after* dedup.
+// 10 entries, *after* dedup.
 internal const val RECENT_ENTRIES_LIMIT = 10
 
 // Fetched before dedup, so repeatedly tracking the same project still yields RECENT_ENTRIES_LIMIT

@@ -23,8 +23,8 @@ private const val SETTINGS_DATASTORE_FILE_NAME = "settings.preferences_pb"
 private const val PROJECT_CACHE_FILE_NAME = "projects.json"
 
 /**
- * Manual DI root: no Hilt/Koin, matches PLANNING.md. Built once by
- * [fi.nikosavola.clockifywear.ClockifyApp] and handed down to composables.
+ * Manual DI root: no Hilt/Koin. Built once by [fi.nikosavola.clockifywear.ClockifyApp] and handed
+ * down to composables.
  *
  * @param context used to locate [Context.getFilesDir], and retained by [ongoingTimerNotifier] and
  *   [tileUpdater] for posting system notifications and requesting Tile/complication refreshes.

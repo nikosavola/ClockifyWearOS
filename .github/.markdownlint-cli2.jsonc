@@ -3,7 +3,7 @@
     "default": true,
     // This project writes long-form prose paragraphs rather than hard-wrapping at a fixed column.
     "MD013": false,
-    // PLANNING.md's reference list is deliberately bare URLs, not markdown links.
+    // docs/RELEASING.md has a deliberately bare URL, not a markdown link.
     "MD034": false,
     // Milestone labels ("**M1 — ...**") are intentionally bold inline text, not headings.
     "MD036": false,

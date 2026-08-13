@@ -40,10 +40,10 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidx-core-ktx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "androidx-lifecycle-runtime-ktx" }
 androidx-lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle-runtime-ktx" }
-# Not in the original M2 dependency list: compose-ui 1.9.0 dropped the deprecated
-# androidx.compose.ui.platform.LocalLifecycleOwner alias, so the lifecycle-scoped ticker
-# (repeatOnLifecycle at the collection site, per PLANNING.md) needs this for LocalLifecycleOwner
-# and collectAsStateWithLifecycle. Same 2.9.3 line as the rest of the lifecycle artifacts here.
+# compose-ui 1.9.0 dropped the deprecated androidx.compose.ui.platform.LocalLifecycleOwner alias,
+# so the lifecycle-scoped ticker (repeatOnLifecycle at the collection site) needs this for
+# LocalLifecycleOwner and collectAsStateWithLifecycle. Same 2.9.3 line as the rest of the
+# lifecycle artifacts here.
 androidx-lifecycle-runtime-compose = { group = "androidx.lifecycle", name = "lifecycle-runtime-compose", version.ref = "androidx-lifecycle-runtime-ktx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidx-activity-compose" }
 

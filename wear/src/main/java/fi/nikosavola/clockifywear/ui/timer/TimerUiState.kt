@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import fi.nikosavola.clockifywear.data.ClockifyError
 import java.time.Instant
 
-/** Per PLANNING.md "State management": one state per screen render, no partial/combined states. */
+/** One state per screen render, no partial/combined states. */
 sealed interface TimerUiState {
   data class Idle(val hasDefaultProject: Boolean) : TimerUiState
 

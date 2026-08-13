@@ -14,7 +14,7 @@ data class RecentEntryDisplay(
   val projectColor: Color? = null,
 )
 
-/** Per PLANNING.md "State management": one state per screen render, no partial/combined states. */
+/** One state per screen render, no partial/combined states. */
 sealed interface RecentsUiState {
   data object Loading : RecentsUiState
 

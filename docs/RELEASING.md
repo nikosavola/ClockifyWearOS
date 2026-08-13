@@ -161,7 +161,7 @@ Once sections 1-5 are done once, each subsequent release is:
 
 ## 7. Known submission risk this pipeline does not address
 
-Signing in on-watch requires typing a ~48-character Clockify API key with the watch's own IME (see
-`HANDOFF.md` section 8.3); a Play reviewer testing this app for the first time will hit that same
-friction with no demo account provided. That's a submission-review risk, not something
-`release.yml` or this doc's setup steps fix.
+Signing in on-watch requires typing a ~48-character Clockify API key with the watch's own IME; a
+Play reviewer testing this app for the first time will hit that same friction with no demo account
+provided. That's a submission-review risk, not something `release.yml` or this doc's setup steps
+fix.

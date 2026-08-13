@@ -124,7 +124,7 @@ class TimerViewModel(
   /**
    * Advances the displayed elapsed time once a second while [uiState] is [TimerUiState.Running].
    * Meant to be launched from the screen's `repeatOnLifecycle(STARTED)` block so it is cancelled,
-   * not merely idle, once the composition stops (PLANNING.md "Elapsed ticker"). Recomputes from
+   * not merely idle, once the composition stops. Recomputes from
    * [TimerUiState.Running.startInstant] and [clock] each tick rather than incrementing a counter,
    * so it can't drift. Tested with virtual time by launching it and calling `advanceTimeBy`, never
    * real sleeps.

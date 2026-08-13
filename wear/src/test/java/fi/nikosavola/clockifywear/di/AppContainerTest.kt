@@ -36,7 +36,7 @@ class AppContainerTest {
   // ClockifyRepository.workspaces() does not call settingsStore.currentSettings() before firing
   // (unlike every identity-requiring operation), so it is exactly the request that would go out
   // with no X-Api-Key header on a cold start if nothing primed the in-memory key mirror first (see
-  // SettingsStore.apiKeySupplier's doc and HANDOFF.md section 4). AppContainer wraps the SAME
+  // SettingsStore.apiKeySupplier's doc). AppContainer wraps the SAME
   // DataStore in a fresh SettingsStore (mirroring SettingsStoreTest's own cold-start test), so its
   // cachedApiKey starts null even though a key is already on disk, exactly as after a process
   // restart. Awaiting settingsPrimed before the request proves the fix.

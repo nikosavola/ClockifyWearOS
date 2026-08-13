@@ -87,7 +87,7 @@ private fun SignedOutContent(state: SettingsUiState.SignedOut, onSignIn: (String
   state.error?.let { error -> Text(text = errorMessage(error)) }
   Text(text = stringResource(R.string.settings_api_key_label))
   // BasicTextField, not a material3 text field: a watch gets the system IME, and Wear OS 3+
-  // additionally offers phone remote input automatically (PLANNING.md "SettingsScreen").
+  // additionally offers phone remote input automatically.
   // BasicTextField defaults to black text and a black cursor, which is invisible on the dark Wear
   // theme, and draws no boundary of its own, so an unstyled one looks like empty space. Both have
   // to be supplied explicitly.

@@ -63,7 +63,7 @@ private fun runningEntryListJson(
 // real suspension, correct regardless of which thread resumes it) rather than advanceUntilIdle(),
 // which only drains what is already queued and does not wait out MockWebServer's real round trip.
 // The ticker itself does no I/O, so once Running is reached, advanceTimeBy()/runCurrent() safely
-// drive it with virtual time only, per PLANNING.md.
+// drive it with virtual time only.
 @RunWith(RobolectricTestRunner::class)
 class TimerViewModelTest {
   @get:Rule val tempFolder = TemporaryFolder()

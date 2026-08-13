@@ -3,7 +3,7 @@ package fi.nikosavola.clockifywear.ui.tasks
 import fi.nikosavola.clockifywear.data.ClockifyError
 import fi.nikosavola.clockifywear.data.api.dto.TaskDto
 
-/** Per PLANNING.md "State management": one state per screen render, no partial/combined states. */
+/** One state per screen render, no partial/combined states. */
 sealed interface TaskPickerUiState {
   data object Loading : TaskPickerUiState
 

@@ -160,7 +160,7 @@ fun TimerScreen(
   val lifecycleOwner = LocalLifecycleOwner.current
 
   // repeatOnLifecycle cancels onForeground/runElapsedTicker together once this screen leaves
-  // STARTED, so the 1 s tick never runs while backgrounded or off-screen (PLANNING.md).
+  // STARTED, so the 1 s tick never runs while backgrounded or off-screen.
   LaunchedEffect(viewModel, lifecycleOwner) {
     lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
       viewModel.onForeground()
@@ -527,7 +527,7 @@ private fun RunningContent(
   // by the number's own height to also clear it on narrow screens where the number wraps to two
   // lines, but that reasoned about distance to the number's center rather than its top edge, so it
   // overshot by roughly half the number's height and ran straight into the refresh icon on normal
-  // screens. See HANDOFF.md's known-debts entry on this for the still-open narrow-screen case.
+  // screens. The narrow-screen case where the number wraps to two lines is still open.
   Row(
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier.offset(y = -PROJECT_LABEL_CENTER_GAP),

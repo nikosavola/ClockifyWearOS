@@ -121,9 +121,9 @@ class ProjectPickerViewModelTest {
   // requestCount right away) would pass with or without the await() and prove nothing: both
   // versions look identically "not there yet" immediately after a single runCurrent(), because
   // the real DataStore/OkHttp work happens on real threads outside the virtual scheduler either
-  // way (HANDOFF.md section 7: "a test that passes both with and without the fix is worse than no
-  // test" -- verified by actually removing the await() and watching this exact assertion still
-  // pass). Leaving settingsPrimed permanently incomplete and waiting out real wall-clock time
+  // way -- a test that passes both with and without the fix is worse than no test, verified by
+  // actually removing the await() and watching this exact assertion still pass. Leaving
+  // settingsPrimed permanently incomplete and waiting out real wall-clock time
   // instead proves genuine blocking: with the await() in place, nothing can ever reach the
   // repository while the Deferred is incomplete, no matter how long real time is given to prove
   // otherwise; without it, the real round trip completes well within the wait below.
