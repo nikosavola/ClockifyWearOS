@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.password
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.wear.compose.material3.Button
@@ -34,6 +35,9 @@ import androidx.wear.compose.material3.Text
 import fi.nikosavola.clockifywear.R
 import fi.nikosavola.clockifywear.ui.errorMessage
 
+private val SETTINGS_HORIZONTAL_PADDING = 14.dp
+private val SETTINGS_CONTENT_GAP = 10.dp
+
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -41,11 +45,18 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
 
   ScreenScaffold(scrollState = scrollState) { contentPadding ->
     Column(
-      modifier = Modifier.fillMaxSize().verticalScroll(scrollState).padding(contentPadding),
+      modifier =
+        Modifier.fillMaxSize()
+          .verticalScroll(scrollState)
+          .padding(contentPadding)
+          .padding(horizontal = SETTINGS_HORIZONTAL_PADDING),
       horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center,
+      verticalArrangement = Arrangement.spacedBy(SETTINGS_CONTENT_GAP, Alignment.CenterVertically),
     ) {
-      Text(text = stringResource(R.string.settings_title))
+      Text(
+        text = stringResource(R.string.settings_title),
+        style = MaterialTheme.typography.titleMedium,
+      )
       when (val state = uiState) {
         is SettingsUiState.Loading -> {
           Text(text = stringResource(R.string.loading))
@@ -69,11 +80,19 @@ private fun SignedInContent(state: SettingsUiState.SignedIn, onSignOut: () -> Un
   // Email is the friendlier identity to show; fall back to the raw workspace id if it is ever
   // missing so the screen never regresses to showing nothing.
   val email = state.email
-  if (email != null && email.isNotBlank()) {
-    Text(text = stringResource(R.string.settings_signed_in_account, email))
-  } else {
-    Text(text = stringResource(R.string.settings_signed_in_workspace, state.workspaceId))
-  }
+  val identityText =
+    if (email != null && email.isNotBlank()) {
+      stringResource(R.string.settings_signed_in_account, email)
+    } else {
+      stringResource(R.string.settings_signed_in_workspace, state.workspaceId)
+    }
+  Text(
+    text = identityText,
+    modifier = Modifier.fillMaxWidth(),
+    style = MaterialTheme.typography.bodyMedium,
+    color = MaterialTheme.colorScheme.onSurfaceVariant,
+    textAlign = TextAlign.Center,
+  )
   Button(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
     Text(text = stringResource(R.string.settings_sign_out_button))
   }
@@ -84,8 +103,20 @@ private fun SignedOutContent(state: SettingsUiState.SignedOut, onSignIn: (String
   var apiKeyInput by remember { mutableStateOf("") }
   val clipboardManager = LocalClipboardManager.current
 
-  state.error?.let { error -> Text(text = errorMessage(error)) }
-  Text(text = stringResource(R.string.settings_api_key_label))
+  state.error?.let { error ->
+    Text(
+      text = errorMessage(error),
+      modifier = Modifier.fillMaxWidth(),
+      style = MaterialTheme.typography.bodyMedium,
+      color = MaterialTheme.colorScheme.error,
+      textAlign = TextAlign.Center,
+    )
+  }
+  Text(
+    text = stringResource(R.string.settings_api_key_label),
+    style = MaterialTheme.typography.labelMedium,
+    color = MaterialTheme.colorScheme.onSurfaceVariant,
+  )
   // BasicTextField, not a material3 text field: a watch gets the system IME, and Wear OS 3+
   // additionally offers phone remote input automatically.
   // BasicTextField defaults to black text and a black cursor, which is invisible on the dark Wear
@@ -99,7 +130,6 @@ private fun SignedOutContent(state: SettingsUiState.SignedOut, onSignIn: (String
     onValueChange = { apiKeyInput = it },
     modifier =
       Modifier.fillMaxWidth()
-        .padding(horizontal = 8.dp)
         .background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.small)
         .padding(8.dp)
         .semantics { password() },
@@ -116,7 +146,13 @@ private fun SignedOutContent(state: SettingsUiState.SignedOut, onSignIn: (String
   // system clipboard between them, so pasting a key copied on the phone works without any
   // Data Layer code. Long-press-to-paste on BasicTextField is not reliably discoverable on a
   // small round screen, so this button reads the clipboard directly as a visible alternative.
-  Text(text = stringResource(R.string.settings_clipboard_hint))
+  Text(
+    text = stringResource(R.string.settings_clipboard_hint),
+    modifier = Modifier.fillMaxWidth(),
+    style = MaterialTheme.typography.bodySmall,
+    color = MaterialTheme.colorScheme.onSurfaceVariant,
+    textAlign = TextAlign.Center,
+  )
   FilledTonalButton(
     onClick = { clipboardManager.getText()?.let { apiKeyInput = it.text } },
     modifier = Modifier.fillMaxWidth(),
