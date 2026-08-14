@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/nikosavola/ClockifyWearOS/actions/workflows/ci.yml/badge.svg)](https://github.com/nikosavola/ClockifyWearOS/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/nikosavola/ClockifyWearOS/graph/badge.svg)](https://codecov.io/gh/nikosavola/ClockifyWearOS)
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=nikosavola_ClockifyWearOS&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=nikosavola_ClockifyWearOS)
 [![License: Apache 2.0](https://img.shields.io/github/license/nikosavola/ClockifyWearOS)](LICENSE)
 
 ---

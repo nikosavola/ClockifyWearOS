@@ -22,6 +22,14 @@ plugins {
   alias(libs.plugins.ktfmt) apply false
   alias(libs.plugins.ktlint) apply false
   alias(libs.plugins.detekt) apply false
+  alias(libs.plugins.sonarqube)
+}
+
+sonar {
+  properties {
+    property("sonar.projectKey", "nikosavola_ClockifyWearOS")
+    property("sonar.organization", "nikosavola")
+  }
 }
 
 // Applied to the root project too so ktfmtFormat/ktfmtCheck also cover this file and
