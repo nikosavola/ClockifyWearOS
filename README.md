@@ -63,6 +63,11 @@ accepts a paste from your phone's clipboard, which syncs to the watch automatica
   sign-in flows, and is an accepted trade-off rather than an oversight.
 - **No phone companion app.** Everything, including sign-in, happens on the watch itself.
 
+## Privacy
+
+See [PRIVACY.md](PRIVACY.md): your API key stays on the watch, encrypted, and every request goes
+straight to Clockify's own API. Nothing is collected by this app's developer.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup (via [`just`](https://just.systems/))
