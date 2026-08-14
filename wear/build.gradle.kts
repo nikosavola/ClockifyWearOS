@@ -7,6 +7,7 @@ plugins {
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.play.publisher)
+  alias(libs.plugins.kover)
 }
 
 // Release signing: a local gitignored keystore.properties file takes priority (for a developer

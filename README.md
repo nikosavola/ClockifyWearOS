@@ -1,6 +1,7 @@
 # ![ClockifyWearOS logo](docs/logo.png) ClockifyWearOS
 
 [![CI](https://github.com/nikosavola/ClockifyWearOS/actions/workflows/ci.yml/badge.svg)](https://github.com/nikosavola/ClockifyWearOS/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/nikosavola/ClockifyWearOS/graph/badge.svg)](https://codecov.io/gh/nikosavola/ClockifyWearOS)
 [![License: Apache 2.0](https://img.shields.io/github/license/nikosavola/ClockifyWearOS)](LICENSE)
 
 ---
