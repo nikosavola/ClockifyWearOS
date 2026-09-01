@@ -62,4 +62,15 @@ interface ClockifyApi {
     @Path("userId") userId: String,
     @Query("page-size") pageSize: Int,
   ): List<TimeEntryDto>
+
+  // start/end are ISO-8601 instants (e.g. Instant.toString()); Clockify treats both as UTC.
+  @GET("workspaces/{workspaceId}/user/{userId}/time-entries")
+  suspend fun getTimeEntries(
+    @Path("workspaceId") workspaceId: String,
+    @Path("userId") userId: String,
+    @Query("start") start: String,
+    @Query("end") end: String,
+    @Query("page") page: Int,
+    @Query("page-size") pageSize: Int,
+  ): List<TimeEntryDto>
 }

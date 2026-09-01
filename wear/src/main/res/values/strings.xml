@@ -44,6 +44,12 @@
     <string name="recents_title">Recent entries</string>
     <string name="recents_empty">No recent entries yet.</string>
 
+    <string name="summary_title">Summary</string>
+    <string name="summary_section_today">Today</string>
+    <string name="summary_section_this_week">This week</string>
+    <string name="summary_section_last_week">Last week</string>
+    <string name="summary_section_empty">No entries</string>
+
     <string name="error_unauthorized">Invalid API key. Please sign in again.</string>
     <string name="error_rate_limited">Clockify is rate limiting requests. Try again shortly.</string>
     <string name="error_offline">No network connection.</string>

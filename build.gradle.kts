@@ -29,6 +29,16 @@ sonar {
   properties {
     property("sonar.projectKey", "nikosavola_ClockifyWearOS")
     property("sonar.organization", "nikosavola")
+    // Same Kover-generated report the Codecov step in ci.yml uploads; sonar-kotlin reads JaCoCo-XML
+    // format under this key for both JaCoCo and Kover. Without it, SonarCloud has no coverage data
+    // source at all and reports a flat 0% on every PR, regardless of actual test coverage. Must be
+    // absolute: this property set from the root project is resolved relative to the *module*
+    // directory (wear/), not the root, so a root-relative literal here silently resolves to
+    // wear/wear/build/... and is never found.
+    property(
+      "sonar.coverage.jacoco.xmlReportPaths",
+      file("wear/build/reports/kover/reportDebug.xml").absolutePath,
+    )
   }
 }
 

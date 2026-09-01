@@ -44,6 +44,12 @@
     <string name="recents_title">Letzte Einträge</string>
     <string name="recents_empty">Noch keine letzten Einträge.</string>
 
+    <string name="summary_title">Übersicht</string>
+    <string name="summary_section_today">Heute</string>
+    <string name="summary_section_this_week">Diese Woche</string>
+    <string name="summary_section_last_week">Letzte Woche</string>
+    <string name="summary_section_empty">Keine Einträge</string>
+
     <string name="error_unauthorized">Ungültiger API-Schlüssel. Bitte erneut anmelden.</string>
     <string name="error_rate_limited">Clockify begrenzt derzeit die Anfragen. Versuche es gleich noch einmal.</string>
     <string name="error_offline">Keine Netzwerkverbindung.</string>

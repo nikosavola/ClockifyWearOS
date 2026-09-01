@@ -44,6 +44,12 @@
     <string name="recents_title">Последние записи</string>
     <string name="recents_empty">Пока нет последних записей.</string>
 
+    <string name="summary_title">Сводка</string>
+    <string name="summary_section_today">Сегодня</string>
+    <string name="summary_section_this_week">На этой неделе</string>
+    <string name="summary_section_last_week">На прошлой неделе</string>
+    <string name="summary_section_empty">Нет записей</string>
+
     <string name="error_unauthorized">Неверный API-ключ. Войдите снова.</string>
     <string name="error_rate_limited">Clockify временно ограничивает запросы. Повторите попытку позже.</string>
     <string name="error_offline">Нет подключения к сети.</string>
