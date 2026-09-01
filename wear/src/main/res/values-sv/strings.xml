@@ -44,6 +44,12 @@
     <string name="recents_title">Senaste poster</string>
     <string name="recents_empty">Inga senaste poster än.</string>
 
+    <string name="summary_title">Sammanfattning</string>
+    <string name="summary_section_today">Idag</string>
+    <string name="summary_section_this_week">Denna vecka</string>
+    <string name="summary_section_last_week">Förra veckan</string>
+    <string name="summary_section_empty">Inga poster</string>
+
     <string name="error_unauthorized">Ogiltig API-nyckel. Logga in igen.</string>
     <string name="error_rate_limited">Clockify begränsar antalet förfrågningar. Försök igen strax.</string>
     <string name="error_offline">Ingen nätverksanslutning.</string>

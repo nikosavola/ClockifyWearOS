@@ -67,6 +67,9 @@ private fun projectsPageJson(
 private fun timeEntryJson(id: String, start: String = "2026-07-31T09:00:00Z"): String =
   """{"id": "$id", "timeInterval": {"start": "$start"}}"""
 
+private fun timeEntriesPageJson(count: Int, prefix: String): String =
+  (0 until count).joinToString(prefix = "[", postfix = "]") { i -> timeEntryJson("$prefix$i") }
+
 @RunWith(RobolectricTestRunner::class)
 class ClockifyRepositoryTest {
   @get:Rule val tempFolder = TemporaryFolder()
@@ -430,6 +433,78 @@ class ClockifyRepositoryTest {
     assertEquals(RECENT_ENTRIES_LIMIT, (result as ClockifyResult.Success).value.size)
   }
 
+  // --- timeEntriesBetween -----------------------------------------------------------------
+
+  @Test
+  fun `timeEntriesBetween sends the range as start-end query params and returns the response`() =
+    runTest {
+      primeIdentity()
+      val since = Instant.parse("2026-07-27T00:00:00Z")
+      val until = Instant.parse("2026-08-05T14:30:00Z")
+      server.enqueue(
+        MockResponse()
+          .setBody(
+            """[{"id": "e1", "projectId": "$PROJECT_ID", "timeInterval": {"start": "2026-08-05T09:00:00Z"}}]"""
+          )
+      )
+
+      val result = repository.timeEntriesBetween(since, until)
+
+      assertTrue(result is ClockifyResult.Success)
+      assertEquals(1, (result as ClockifyResult.Success).value.size)
+      val requestUrl = server.takeRequest().requestUrl ?: error("no request URL")
+      assertEquals(since.toString(), requestUrl.queryParameter("start"))
+      assertEquals(until.toString(), requestUrl.queryParameter("end"))
+      assertEquals("1", requestUrl.queryParameter("page"))
+      assertEquals(
+        SUMMARY_ENTRIES_PAGE_SIZE,
+        requestUrl.queryParameter("page-size")?.toInt() ?: error("no page-size"),
+      )
+    }
+
+  @Test
+  fun `timeEntriesBetween follows a full page with a short page, unlike recentEntries`() = runTest {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody(timeEntriesPageJson(SUMMARY_ENTRIES_PAGE_SIZE, "a")))
+    server.enqueue(MockResponse().setBody(timeEntriesPageJson(5, "b")))
+
+    val result = repository.timeEntriesBetween(Instant.parse("2026-07-27T00:00:00Z"), Instant.now())
+
+    assertTrue(result is ClockifyResult.Success)
+    assertEquals(SUMMARY_ENTRIES_PAGE_SIZE + 5, (result as ClockifyResult.Success).value.size)
+    assertEquals(2, server.requestCount)
+    assertEquals("1", server.takeRequest().requestUrl!!.queryParameter("page"))
+    assertEquals("2", server.takeRequest().requestUrl!!.queryParameter("page"))
+  }
+
+  @Test
+  fun `timeEntriesBetween stops after MAX_SUMMARY_ENTRIES_PAGES instead of looping forever`() =
+    runTest {
+      primeIdentity()
+      repeat(MAX_SUMMARY_ENTRIES_PAGES) {
+        server.enqueue(MockResponse().setBody(timeEntriesPageJson(SUMMARY_ENTRIES_PAGE_SIZE, "c")))
+      }
+
+      val result =
+        repository.timeEntriesBetween(Instant.parse("2026-07-27T00:00:00Z"), Instant.now())
+
+      assertTrue(result is ClockifyResult.Success)
+      assertEquals(
+        MAX_SUMMARY_ENTRIES_PAGES * SUMMARY_ENTRIES_PAGE_SIZE,
+        (result as ClockifyResult.Success).value.size,
+      )
+      assertEquals(MAX_SUMMARY_ENTRIES_PAGES, server.requestCount)
+    }
+
+  @Test
+  fun `timeEntriesBetween fails with NotSignedIn instead of crashing when identity is unset`() =
+    runTest {
+      val result =
+        repository.timeEntriesBetween(Instant.parse("2026-07-27T00:00:00Z"), Instant.now())
+
+      assertEquals(ClockifyResult.Failure(ClockifyError.NotSignedIn), result)
+    }
+
   // --- missing identity
   // -----------------------------------------------------------------------------
 
@@ -570,6 +645,15 @@ private object CancellingApi : ClockifyApi {
   override suspend fun getRecentTimeEntries(
     workspaceId: String,
     userId: String,
+    pageSize: Int,
+  ): List<TimeEntryDto> = throw CancellationException(CANCEL_MESSAGE)
+
+  override suspend fun getTimeEntries(
+    workspaceId: String,
+    userId: String,
+    start: String,
+    end: String,
+    page: Int,
     pageSize: Int,
   ): List<TimeEntryDto> = throw CancellationException(CANCEL_MESSAGE)
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,7 +27,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.FilledTonalButton
 import androidx.wear.compose.material3.MaterialTheme
@@ -42,6 +46,15 @@ private val SETTINGS_CONTENT_GAP = 10.dp
 fun SettingsScreen(viewModel: SettingsViewModel) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
   val scrollState = rememberScrollState()
+
+  // Reloads on every resume: since the main pager (see NavGraph.kt) can have this screen's own
+  // ViewModel instance alive alongside a second one from the pushed error-recovery Settings route,
+  // each instance only snapshots SettingsStore at init/action time and would otherwise show a
+  // stale signed-in/out state after the other instance changes it.
+  val lifecycleOwner = LocalLifecycleOwner.current
+  LaunchedEffect(viewModel, lifecycleOwner) {
+    lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) { viewModel.load() }
+  }
 
   ScreenScaffold(scrollState = scrollState) { contentPadding ->
     Column(

@@ -44,6 +44,12 @@
     <string name="recents_title">最近记录</string>
     <string name="recents_empty">暂无最近记录。</string>
 
+    <string name="summary_title">摘要</string>
+    <string name="summary_section_today">今天</string>
+    <string name="summary_section_this_week">本周</string>
+    <string name="summary_section_last_week">上周</string>
+    <string name="summary_section_empty">无记录</string>
+
     <string name="error_unauthorized">API 密钥无效，请重新登录。</string>
     <string name="error_rate_limited">Clockify 正在限制请求速率，请稍后再试。</string>
     <string name="error_offline">没有网络连接。</string>

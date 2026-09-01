@@ -44,6 +44,12 @@
     <string name="recents_title">Entrées récentes</string>
     <string name="recents_empty">Aucune entrée récente pour l\'instant.</string>
 
+    <string name="summary_title">Résumé</string>
+    <string name="summary_section_today">Aujourd\'hui</string>
+    <string name="summary_section_this_week">Cette semaine</string>
+    <string name="summary_section_last_week">Semaine dernière</string>
+    <string name="summary_section_empty">Aucune entrée</string>
+
     <string name="error_unauthorized">Clé API invalide. Veuillez vous reconnecter.</string>
     <string name="error_rate_limited">Clockify limite temporairement les requêtes. Réessayez dans un instant.</string>
     <string name="error_offline">Aucune connexion réseau.</string>

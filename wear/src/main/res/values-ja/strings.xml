@@ -44,6 +44,12 @@
     <string name="recents_title">最近の記録</string>
     <string name="recents_empty">最近の記録はまだありません。</string>
 
+    <string name="summary_title">サマリー</string>
+    <string name="summary_section_today">今日</string>
+    <string name="summary_section_this_week">今週</string>
+    <string name="summary_section_last_week">先週</string>
+    <string name="summary_section_empty">記録なし</string>
+
     <string name="error_unauthorized">APIキーが無効です。再度サインインしてください。</string>
     <string name="error_rate_limited">Clockifyがリクエストを制限しています。しばらくしてから再試行してください。</string>
     <string name="error_offline">ネットワークに接続されていません。</string>

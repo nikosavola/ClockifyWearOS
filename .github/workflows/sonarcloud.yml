@@ -43,4 +43,8 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         # No plain `build` task exists at the root of this Android project (unlike the SonarQube
         # docs' generic example), so build the app and run its tests explicitly before analysis.
-        run: ./gradlew :wear:assembleDebug :wear:testDebugUnitTest sonar --no-daemon
+        # koverXmlReportDebug generates the coverage report sonar.coverage.jacoco.xmlReportPaths
+        # points at (see build.gradle.kts) - without it Sonar has nothing to read and always
+        # reports 0% coverage, regardless of how much of the diff tests actually cover.
+        run: |
+          ./gradlew :wear:assembleDebug :wear:koverXmlReportDebug sonar --no-daemon

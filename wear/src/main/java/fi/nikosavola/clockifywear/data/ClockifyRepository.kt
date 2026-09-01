@@ -31,6 +31,13 @@ internal const val RECENT_ENTRIES_LIMIT = 10
 // distinct suggestions. Requesting only RECENT_ENTRIES_LIMIT would silently show fewer.
 internal const val RECENT_ENTRIES_FETCH_SIZE = 50
 
+internal const val SUMMARY_ENTRIES_PAGE_SIZE = 200
+
+// Same reasoning as MAX_PROJECT_PAGES: bounds the pagination loop so a server that never returns a
+// short page cannot spin the watch radio forever. 25 pages * 200 = 5,000 entries in two weeks, far
+// beyond any real Clockify workspace.
+internal const val MAX_SUMMARY_ENTRIES_PAGES = 25
+
 private const val HTTP_UNAUTHORIZED = 401
 private const val HTTP_TOO_MANY_REQUESTS = 429
 private const val HTTP_NOT_FOUND = 404
@@ -204,6 +211,62 @@ class ClockifyRepository(
         }
       }
     }
+
+  /**
+   * Entries with [TimeIntervalDto.start] in `[since, until)`, for the Summary screen's Today/This
+   * week/Last week grouping. Unlike [recentEntries] this is not deduped or capped, and unlike
+   * [SUMMARY_ENTRIES_PAGE_SIZE]'s name suggests, it is not assumed to fit in one page either: this
+   * screen presents itself as an exhaustive total, so unlike recentEntries's fetch-one-page
+   * trade-off (silently dropping older entries is harmless for a picker) a truncated range here
+   * would silently under-report a section's total.
+   */
+  suspend fun timeEntriesBetween(
+    since: Instant,
+    until: Instant,
+  ): ClockifyResult<List<TimeEntryDto>> =
+    when (val idsResult = requireWorkspaceAndUser()) {
+      is ClockifyResult.Failure -> {
+        idsResult
+      }
+      is ClockifyResult.Success -> {
+        val (workspaceId, userId) = idsResult.value
+        fetchAllTimeEntries(workspaceId, userId, since, until)
+      }
+    }
+
+  private suspend fun fetchAllTimeEntries(
+    workspaceId: String,
+    userId: String,
+    since: Instant,
+    until: Instant,
+  ): ClockifyResult<List<TimeEntryDto>> {
+    val fetched = mutableListOf<TimeEntryDto>()
+    var page = 1
+    while (page <= MAX_SUMMARY_ENTRIES_PAGES) {
+      when (
+        val pageResult = runCatchingClockify {
+          api.getTimeEntries(
+            workspaceId,
+            userId,
+            start = since.toString(),
+            end = until.toString(),
+            page = page,
+            pageSize = SUMMARY_ENTRIES_PAGE_SIZE,
+          )
+        }
+      ) {
+        is ClockifyResult.Failure -> {
+          return pageResult
+        }
+        is ClockifyResult.Success -> {
+          fetched += pageResult.value
+          if (pageResult.value.size < SUMMARY_ENTRIES_PAGE_SIZE) break
+          page++
+        }
+      }
+    }
+    return ClockifyResult.Success(fetched)
+  }
 
   private suspend fun persistResolvedWorkspace(user: UserDto): ClockifyResult<UserDto> =
     when (val workspaceResult = resolveWorkspaceId(user)) {

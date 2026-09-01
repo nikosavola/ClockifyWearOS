@@ -44,6 +44,12 @@
     <string name="recents_title">Viimeisimmät kirjaukset</string>
     <string name="recents_empty">Ei viimeaikaisia kirjauksia.</string>
 
+    <string name="summary_title">Yhteenveto</string>
+    <string name="summary_section_today">Tänään</string>
+    <string name="summary_section_this_week">Tällä viikolla</string>
+    <string name="summary_section_last_week">Viime viikolla</string>
+    <string name="summary_section_empty">Ei kirjauksia</string>
+
     <string name="error_unauthorized">Virheellinen API-avain. Kirjaudu sisään uudelleen.</string>
     <string name="error_rate_limited">Clockify rajoittaa pyyntöjä. Yritä pian uudelleen.</string>
     <string name="error_offline">Ei verkkoyhteyttä.</string>

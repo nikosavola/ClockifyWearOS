@@ -44,6 +44,12 @@
     <string name="recents_title">Acta recentia</string>
     <string name="recents_empty">Nulla acta recentia adhuc sunt.</string>
 
+    <string name="summary_title">Conspectus</string>
+    <string name="summary_section_today">Hodie</string>
+    <string name="summary_section_this_week">Hac hebdomade</string>
+    <string name="summary_section_last_week">Priore hebdomade</string>
+    <string name="summary_section_empty">Nulla acta</string>
+
     <string name="error_unauthorized">Clavis API invalida est. Iterum ingredere.</string>
     <string name="error_rate_limited">Clockify postulationes nunc coercet. Post breve tempus iterum conare.</string>
     <string name="error_offline">Nulla est retis conexio.</string>
