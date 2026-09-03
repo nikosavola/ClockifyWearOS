@@ -209,3 +209,8 @@ signing: it was done with both modules' `assembleDebug` output sharing the same 
 keystore (see above), so re-run this same manual pairing check once real release signing exists for
 `:mobile` and confirm it still works signed with `:wear`'s certificate, not before assuming the
 signed release build behaves the same way.
+
+This can't be automated in CI - Wear OS device pairing is an interactive, Google-account-backed
+flow with no scriptable ADB/CLI equivalent, so neither a two-emulator rig nor a device farm can
+stand in for it hermetically. See [docs/COMPANION_QA.md](COMPANION_QA.md) for the checklist to
+re-run before any release that touches the companion sign-in flow.
