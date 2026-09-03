@@ -37,6 +37,10 @@ android {
     targetCompatibility = JavaVersion.VERSION_21
   }
   buildFeatures { compose = true }
+
+  // Robolectric needs merged manifest/resource info to resolve the app context it fakes - same
+  // as wear/build.gradle.kts.
+  testOptions { unitTests { isIncludeAndroidResources = true } }
 }
 
 kotlin { jvmToolchain(21) }
@@ -63,4 +67,6 @@ dependencies {
 
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
+  testImplementation(libs.robolectric)
+  testImplementation(libs.androidx.test.core)
 }
