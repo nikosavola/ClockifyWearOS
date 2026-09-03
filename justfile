@@ -66,11 +66,16 @@ test:
 test-mobile:
     {{ gradle }} :mobile:testDebugUnitTest
 
-# Full local gate: lint, build and test both apps, with --no-daemon to match CI exactly
+# Run the host-JVM unit tests (shared companion-protocol module)
+[group('test')]
+test-protocol:
+    {{ gradle }} :companion-protocol:test
+
+# Full local gate: lint, build and test all modules, with --no-daemon to match CI exactly
 [group('test')]
 verify:
     {{ gradle }} lintAll :wear:assembleDebug :wear:testDebugUnitTest \
-        :mobile:assembleDebug :mobile:testDebugUnitTest --no-daemon
+        :mobile:assembleDebug :mobile:testDebugUnitTest :companion-protocol:test --no-daemon
 
 # List connected adb devices, including wireless ones
 [group('device')]

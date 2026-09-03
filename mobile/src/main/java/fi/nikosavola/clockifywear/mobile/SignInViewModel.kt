@@ -51,12 +51,24 @@ class SignInViewModel(
   private val mutableUiState = MutableStateFlow<SignInUiState>(SignInUiState.Idle)
   val uiState: StateFlow<SignInUiState> = mutableUiState.asStateFlow()
 
+  // Held here, not as rememberSaveable in SignInScreen: rememberSaveable would write the
+  // plaintext key into the system's saved-instance-state bundle, contradicting PRIVACY.md's claim
+  // that this app stores nothing. A plain remember avoids that but loses the typed-but-unsent key
+  // on every configuration change (rotation, locale/theme switch), not just process death - the
+  // ViewModel already survives those by construction, with nothing ever serialized to disk.
+  private val mutableApiKeyInput = MutableStateFlow("")
+  val apiKeyInput: StateFlow<String> = mutableApiKeyInput.asStateFlow()
+
   // Guards against a double-tap launching two concurrent attempts (two collectors on
   // signInResults, interleaved state writes) - same LAZY-plus-assign-before-start pattern as
   // TimerViewModel.start(), for the same reason: an eagerly-launched coroutine on
   // Dispatchers.Main.immediate can run synchronously up to its first suspension point before a
   // trailing `.also { attemptJob = it }` would ever execute.
   private var attemptJob: Job? = null
+
+  fun updateApiKeyInput(value: String) {
+    mutableApiKeyInput.value = value
+  }
 
   /** Returns the launched [Job] so tests can `join()` it instead of racing real I/O. */
   fun sendApiKey(apiKey: String): Job {

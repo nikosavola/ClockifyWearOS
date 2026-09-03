@@ -16,10 +16,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
@@ -35,11 +32,7 @@ private val CONTENT_GAP = 16.dp
 @Composable
 fun SignInScreen(viewModel: SignInViewModel) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-  // Plain remember, not rememberSaveable: the latter would write the plaintext key into the
-  // system's saved-instance-state bundle on process death, contradicting PRIVACY.md's claim that
-  // this app stores nothing. Losing the typed-but-unsent key across a process death is an
-  // acceptable trade-off - the user re-pastes it, same as if they'd force-closed the app.
-  var apiKeyInput by remember { mutableStateOf("") }
+  val apiKeyInput by viewModel.apiKeyInput.collectAsStateWithLifecycle()
   val clipboard = LocalClipboard.current
   val coroutineScope = rememberCoroutineScope()
 
@@ -64,7 +57,7 @@ fun SignInScreen(viewModel: SignInViewModel) {
 
       OutlinedTextField(
         value = apiKeyInput,
-        onValueChange = { apiKeyInput = it },
+        onValueChange = viewModel::updateApiKeyInput,
         label = { Text(stringResource(R.string.sign_in_api_key_label)) },
         singleLine = true,
         visualTransformation = PasswordVisualTransformation(),
@@ -81,7 +74,7 @@ fun SignInScreen(viewModel: SignInViewModel) {
               clipboard.getClipEntry()?.clipData?.let { clipData ->
                 if (clipData.itemCount > 0) clipData.getItemAt(0).text?.toString() else null
               }
-            pastedText?.let { apiKeyInput = it }
+            pastedText?.let(viewModel::updateApiKeyInput)
           }
         }
       ) {

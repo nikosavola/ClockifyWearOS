@@ -31,7 +31,16 @@ android {
 
   // No signingConfigs/release publishing wiring yet - this module isn't released through
   // release.yml or the Play Store yet (see docs/RELEASING.md). assembleDebug is enough to build,
-  // test, and side-load it during development.
+  // test, and side-load it during development. Minification/shrinking is still enabled for
+  // `release` regardless (same as wear/build.gradle.kts): an unsigned release build is still a
+  // release build, and there's no reason to ship one unobfuscated once signing is added later.
+  buildTypes {
+    release {
+      isMinifyEnabled = true
+      isShrinkResources = true
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    }
+  }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21

@@ -37,6 +37,17 @@ class SignInViewModelTest {
   }
 
   @Test
+  fun `apiKeyInput starts empty and reflects updateApiKeyInput`() =
+    runTest(testDispatcher) {
+      val viewModel = SignInViewModel(FakeWatchLinkClient())
+
+      assertEquals("", viewModel.apiKeyInput.value)
+      viewModel.updateApiKeyInput("pasted-key")
+
+      assertEquals("pasted-key", viewModel.apiKeyInput.value)
+    }
+
+  @Test
   fun `no reachable watch reports NoWatchFound without sending anything`() =
     runTest(testDispatcher) {
       val client = FakeWatchLinkClient(nodeId = null)
