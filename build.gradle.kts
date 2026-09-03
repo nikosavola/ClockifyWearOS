@@ -93,6 +93,9 @@ tasks.register("formatAll") {
     ":wear:ktfmtFormatScripts",
     ":wear:ktfmtFormatKotlin",
     ":wear:ktlintFormat",
+    ":companion-protocol:ktfmtFormatScripts",
+    ":companion-protocol:ktfmtFormatKotlin",
+    ":companion-protocol:ktlintFormat",
   )
 }
 
@@ -107,6 +110,13 @@ tasks.register("lintAll") {
     ":wear:ktlintCheck",
     ":wear:detekt",
     ":wear:lintDebug",
+    // No :companion-protocol:lintDebug - it's a plain Kotlin/JVM module, not an Android one, so
+    // there's no Android Lint task for it at all.
+    ":companion-protocol:ktfmtCheckScripts",
+    ":companion-protocol:ktfmtSourcesNotEmpty",
+    ":companion-protocol:ktfmtCheckKotlin",
+    ":companion-protocol:ktlintCheck",
+    ":companion-protocol:detekt",
   )
 }
 
