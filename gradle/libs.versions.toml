@@ -41,7 +41,7 @@ sonarqube = "7.4.0.8496"
 play-services-wearable = "20.0.1"
 # Compose BOM for the phone module only; wear/build.gradle.kts pins Wear Compose's own artifacts
 # directly instead (see its comment on compose-ui resolution), so the two never need to agree.
-compose-bom = "2026.08.00"
+compose-bom = "2025.09.01"
 
 [libraries]
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }

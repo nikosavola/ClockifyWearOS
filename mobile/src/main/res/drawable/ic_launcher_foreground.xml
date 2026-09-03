@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clockify Wear OS companion — launcher icon. 108x108dp adaptive layer; artwork fits the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- strap lugs -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M48.36,20.99 H59.64 A4.83,4.83 0 0 1 64.47,25.82 V29.85 A4.83,4.83 0 0 1 59.64,34.68 H48.36 A4.83,4.83 0 0 1 43.54,29.85 V25.82 A4.83,4.83 0 0 1 48.36,20.99 Z" />
+    <path android:fillColor="#FFFFFFFF" android:pathData="M48.36,73.32 H59.64 A4.83,4.83 0 0 1 64.47,78.15 V82.18 A4.83,4.83 0 0 1 59.64,87.01 H48.36 A4.83,4.83 0 0 1 43.54,82.18 V78.15 A4.83,4.83 0 0 1 48.36,73.32 Z" />
+    <!-- case gap: keeps the strap from touching the dial -->
+    <path android:fillColor="#FF03A9F4" android:pathData="M27.43,54 a26.57,26.57 0 1 0 53.14,0 a26.57,26.57 0 1 0 -53.14,0 Z" />
+    <!-- dial ring -->
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="6.44" android:fillColor="#00000000" android:pathData="M32.26,54 a21.74,21.74 0 1 0 43.48,0 a21.74,21.74 0 1 0 -43.48,0 Z" />
+    <!-- minute hand -->
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="4.43" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M58.59,49.41 L64.79,43.21" />
+    <!-- hour hand -->
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="6.04" android:strokeLineCap="round" android:fillColor="#00000000" android:pathData="M58.59,58.59 L61.73,61.73" />
+    <!-- pivot dot -->
+    <path android:fillColor="#FFFFFFFF" android:pathData="M50.62,54 a3.38,3.38 0 1 0 6.76,0 a3.38,3.38 0 1 0 -6.76,0 Z" />
+</vector>
