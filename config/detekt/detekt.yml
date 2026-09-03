@@ -38,9 +38,13 @@ exceptions:
   # switching the rule off, so a genuinely swallowed exception of any other type still fails.
   # GeneralSecurityException/IllegalArgumentException are ApiKeyCipher.decrypt's same pattern: any
   # decryption failure (corrupted data, a keystore wiped since it was written) maps to null.
+  # ApiException is PlayServicesWatchLinkClient's same pattern: a failed Play Services Task (watch
+  # out of range, GMS unreachable) maps to a null/false result the UI already has a state for,
+  # same as ApiKeyCipher above - not logged because there's no logging sink on the phone module.
   SwallowedException:
     active: true
     ignoredExceptionTypes:
+      - 'ApiException'
       - 'DateTimeParseException'
       - 'GeneralSecurityException'
       - 'HttpException'

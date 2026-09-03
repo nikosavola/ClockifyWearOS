@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- CompanionTheme (Compose) already switches its color scheme with isSystemInDarkTheme();
+         this values/values-night pair keeps the window background/status bar in sync with it,
+         since the window's own theme is set before Compose ever runs. -->
+    <style name="Theme.Companion" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
