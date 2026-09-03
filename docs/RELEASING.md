@@ -200,7 +200,12 @@ Practically, this means:
   development problem - only once real release signing exists for `:mobile` does it matter that it
   isn't accidentally given its own independent identity.
 
-**Not yet verified end to end.** This companion flow (`CapabilityClient` discovery, the
-`MessageClient` request/reply) has only been built, unit-tested, and linted so far - not run on
-real paired hardware or emulators. Do that manual pairing test (see Verification in the PR/plan
-that introduced this) before relying on it, and again once release signing exists for `:mobile`.
+**Verified end to end on real hardware** (a paired Pixel phone and Galaxy Watch): `CapabilityClient`
+discovery found the watch, a real `MessageClient` request/reply round trip completed, the
+already-signed-in guard correctly refused a second sign-in attempt without disturbing the existing
+session, a forced cold start of the watch's listener service still worked, and a real sign-in with
+a real Clockify API key succeeded end to end. What that verification does **not** cover is release
+signing: it was done with both modules' `assembleDebug` output sharing the same Android debug
+keystore (see above), so re-run this same manual pairing check once real release signing exists for
+`:mobile` and confirm it still works signed with `:wear`'s certificate, not before assuming the
+signed release build behaves the same way.
