@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- android_wear_capabilities (see values/wear.xml) is read by name by Play Services Wearable at
+     runtime, not referenced from any code or manifest in this APK, so the release build's resource
+     shrinker (isShrinkResources = true in build.gradle.kts) would otherwise remove it as unused. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@array/android_wear_capabilities" />

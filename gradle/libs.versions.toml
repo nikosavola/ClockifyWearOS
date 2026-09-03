@@ -10,6 +10,9 @@ coroutines = "1.9.0"
 # Bumped from 1.8.0 to satisfy converter-kotlinx-serialization 3.0.0's core-jvm 1.8.1 floor.
 serialization-json = "1.9.0"
 androidx-core-ktx = "1.17.0"
+# Forces a floor above the androidx.fragment:fragment:1.1.0 that play-services-wearable pulls in
+# transitively (see wear/build.gradle.kts's comment) - not otherwise used directly.
+androidx-fragment = "1.9.0"
 androidx-lifecycle-runtime-ktx = "2.9.3"
 androidx-activity-compose = "1.10.1"
 # Compose UI resolves to 1.9.0 on this classpath (via wear.compose 1.6.2 / lifecycle 2.9.3); pin
@@ -33,6 +36,12 @@ detekt = "2.0.0-alpha.5"
 play-publisher = "4.1.1"
 kover = "0.9.9"
 sonarqube = "7.4.0.8496"
+# Wearable Data Layer API, used by both modules for the phone<->watch sign-in handoff (see
+# wear/.../companion/ and mobile/.../CompanionProtocol.kt).
+play-services-wearable = "20.0.1"
+# Compose BOM for the phone module only; wear/build.gradle.kts pins Wear Compose's own artifacts
+# directly instead (see its comment on compose-ui resolution), so the two never need to agree.
+compose-bom = "2026.08.00"
 
 [libraries]
 kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
@@ -72,6 +81,22 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
 okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "okhttp" }
 
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore-preferences" }
+androidx-fragment = { group = "androidx.fragment", name = "fragment", version.ref = "androidx-fragment" }
+
+play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "play-services-wearable" }
+# Same "coroutines" version as kotlinx-coroutines-android above - both are published from the same
+# kotlinx.coroutines release train and 1.9.0 exists for both, so there's no reason to let them
+# drift apart.
+kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
+
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "compose-bom" }
+# No version.ref on the four below: their version comes from the compose-bom platform import in
+# mobile/build.gradle.kts, not from this catalog.
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidx-test-core" }
