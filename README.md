@@ -27,22 +27,32 @@ Project names and elapsed times shown above are placeholders.
   clockify.me
 
 Clockify has no official OAuth flow for third-party apps, so signing in means entering that API
-key once, on the watch. See [Known limitations](#known-limitations) below.
+key once. See [Configuration](#configuration) below and [Known limitations](#known-limitations).
 
 ## Installation
 
 Not yet published to the Play Store (see [docs/RELEASING.md](docs/RELEASING.md) for the release
-pipeline). Until then:
+pipeline). The phone companion app (`mobile/`) isn't published or released through that pipeline
+yet at all - it currently only exists as a debug build. Until then:
 
-- **Prebuilt APK**: grab the latest APK from [Releases](https://github.com/nikosavola/ClockifyWearOS/releases)
-  and sideload it with `adb install`.
-- **Build from source**: see [Contributing](#contributing) below.
+- **Prebuilt APK** (watch app): grab the latest APK from
+  [Releases](https://github.com/nikosavola/ClockifyWearOS/releases) and sideload it with
+  `adb install`.
+- **Build from source** (either app): see [Contributing](#contributing) below.
 
 ## Configuration
 
-Open **Settings** on the watch (swipe left from the main screen) and paste your Clockify API
-key. Typing a ~48-character key with the watch's own keyboard is painful, so the field also
-accepts a paste from your phone's clipboard, which syncs to the watch automatically on Wear OS.
+**On the watch itself.** Open **Settings** (swipe left from the main screen) and paste your
+Clockify API key. Typing a ~48-character key with the watch's own keyboard is painful, so the field
+also accepts a paste from your phone's clipboard, which syncs to the watch automatically on
+Wear OS.
+
+**Alternative: the phone companion app** (`mobile/`). Install it on the phone paired with your
+watch, paste your Clockify API key there, and tap "Sign in on watch" - it's sent to the watch over
+Bluetooth and validated there, with the result shown back on the phone. Not yet published to the
+Play Store, and not yet verified end to end on real paired hardware (see
+[docs/RELEASING.md](docs/RELEASING.md) section 8) - build and side-load it via
+`just install-mobile` (see [Contributing](#contributing)) if you want to try it.
 
 ## Features
 
@@ -59,16 +69,18 @@ accepts a paste from your phone's clipboard, which syncs to the watch automatica
 
 ## Known limitations
 
-- **On-watch sign-in.** Clockify has no OAuth flow this app can use without becoming an
-  official Marketplace partner with a backend of its own, so the only way to sign in is typing
-  or pasting an API key directly on the watch. This is a rougher experience than typical Wear OS
-  sign-in flows, and is an accepted trade-off rather than an oversight.
-- **No phone companion app.** Everything, including sign-in, happens on the watch itself.
+- **No OAuth.** Clockify has no OAuth flow this app can use without becoming an official
+  Marketplace partner with a backend of its own, so signing in always means an API key rather
+  than a typical account sign-in flow, whether entered on the watch or the phone companion app.
+- **Phone companion app has no timer UI.** It exists solely to get an API key onto the watch
+  more comfortably; starting/stopping timers and picking projects stays watch-only.
 
 ## Privacy
 
 See [PRIVACY.md](PRIVACY.md): your API key stays on the watch, encrypted, and every request goes
-straight to Clockify's own API. Nothing is collected by this app's developer.
+straight to Clockify's own API. The phone companion app never talks to Clockify itself; it only
+relays the key to the watch over the device-local Bluetooth Data Layer channel. Nothing is
+collected by this app's developer.
 
 ## Contributing
 
