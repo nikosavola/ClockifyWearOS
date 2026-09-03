@@ -97,6 +97,13 @@ androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graph
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+# Also no version.ref - same reason as the four above. Deliberately separate from wear's
+# compose-ui-test-junit4/compose-ui-test-manifest aliases below (pinned to wear's own compose-ui
+# = 1.9.0 version key): mobile's Compose graph resolves independently through its own compose-bom
+# platform import, so reusing wear's pinned versions here would fight that resolution instead of
+# matching it.
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidx-test-core" }
