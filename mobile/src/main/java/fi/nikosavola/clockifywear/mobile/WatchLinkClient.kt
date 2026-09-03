@@ -4,10 +4,13 @@ import android.content.Context
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.wearable.CapabilityClient
 import com.google.android.gms.wearable.MessageClient
+import com.google.android.gms.wearable.Node
 import com.google.android.gms.wearable.Wearable
 import fi.nikosavola.clockifywear.companion.CompanionSignInErrorCode
 import fi.nikosavola.clockifywear.companion.WATCH_CAPABILITY
 import fi.nikosavola.clockifywear.companion.apiKeyRequestPath
+import fi.nikosavola.clockifywear.companion.decodeSignInFailurePayload
+import fi.nikosavola.clockifywear.companion.decodeSignInSuccessPayload
 import fi.nikosavola.clockifywear.companion.requestIdFromSignInFailurePath
 import fi.nikosavola.clockifywear.companion.requestIdFromSignInSuccessPath
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -67,21 +70,25 @@ class PlayServicesWatchLinkClient(context: Context) : WatchLinkClient {
   override val signInResults: SharedFlow<SignInAck> = mutableSignInResults.asSharedFlow()
 
   private val listener = MessageClient.OnMessageReceivedListener { event ->
-    parseAck(event.path, event.data)?.let { mutableSignInResults.tryEmit(it) }
+    parseSignInAck(event.path, event.data)?.let { mutableSignInResults.tryEmit(it) }
   }
 
   init {
     messageClient.addListener(listener)
   }
 
+  // Task.await() rethrows whatever the underlying Task failed with. Google's Wearable Data
+  // Layer API guide documents every failure from these clients as an ApiException - not "usually"
+  // but the actual documented contract - so this catches exactly that, not a broader Exception
+  // that would also risk swallowing CancellationException and breaking structured concurrency.
   override suspend fun findReachableWatchNode(): String? =
     try {
-      capabilityClient
-        .getCapability(WATCH_CAPABILITY, CapabilityClient.FILTER_REACHABLE)
-        .await()
-        .nodes
-        .firstOrNull { it.isNearby }
-        ?.id
+      nearbyNodeId(
+        capabilityClient
+          .getCapability(WATCH_CAPABILITY, CapabilityClient.FILTER_REACHABLE)
+          .await()
+          .nodes
+      )
     } catch (e: ApiException) {
       null
     }
@@ -99,19 +106,27 @@ class PlayServicesWatchLinkClient(context: Context) : WatchLinkClient {
   override fun close() {
     messageClient.removeListener(listener)
   }
+}
 
-  private fun parseAck(path: String, data: ByteArray): SignInAck? {
-    val successRequestId = requestIdFromSignInSuccessPath(path)
-    val failureRequestId = requestIdFromSignInFailurePath(path)
-    return when {
-      successRequestId != null ->
-        SignInAck.Success(successRequestId, String(data, Charsets.UTF_8).ifEmpty { null })
-      failureRequestId != null ->
-        SignInAck.Failure(
-          failureRequestId,
-          CompanionSignInErrorCode.fromWireValue(String(data, Charsets.UTF_8)),
-        )
-      else -> null
-    }
+/**
+ * The first *nearby* (directly Bluetooth-connected, not just cloud-reachable) node, or null. Pure
+ * so it's testable without real [com.google.android.gms.wearable.Node] instances from Play
+ * Services - [com.google.android.gms.wearable.Node] is an interface, so a fake is enough.
+ */
+internal fun nearbyNodeId(nodes: Collection<Node>): String? = nodes.firstOrNull { it.isNearby }?.id
+
+/**
+ * Pure so it's testable without a real `MessageClient` - see [PlayServicesWatchLinkClient]'s
+ * `listener`, its only caller.
+ */
+internal fun parseSignInAck(path: String, data: ByteArray): SignInAck? {
+  val successRequestId = requestIdFromSignInSuccessPath(path)
+  val failureRequestId = requestIdFromSignInFailurePath(path)
+  return when {
+    successRequestId != null ->
+      SignInAck.Success(successRequestId, decodeSignInSuccessPayload(data))
+    failureRequestId != null ->
+      SignInAck.Failure(failureRequestId, decodeSignInFailurePayload(data))
+    else -> null
   }
 }

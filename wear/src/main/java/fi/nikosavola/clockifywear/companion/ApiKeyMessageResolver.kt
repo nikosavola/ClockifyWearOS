@@ -46,6 +46,6 @@ fun CompanionSignInOutcome.toReplyPath(requestId: String): String =
 
 fun CompanionSignInOutcome.toReplyPayload(): ByteArray =
   when (this) {
-    is CompanionSignInOutcome.Success -> email.orEmpty().toByteArray(Charsets.UTF_8)
-    is CompanionSignInOutcome.Failure -> errorCode.name.toByteArray(Charsets.UTF_8)
+    is CompanionSignInOutcome.Success -> encodeSignInSuccessPayload(email)
+    is CompanionSignInOutcome.Failure -> encodeSignInFailurePayload(errorCode)
   }
