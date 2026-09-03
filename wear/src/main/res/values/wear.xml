@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Advertises this app to the paired phone's CapabilityClient so the companion app (mobile
+     module) can find a reachable watch node without knowing its node id up front. -->
+<resources>
+    <string-array name="android_wear_capabilities">
+        <item>clockify_wear_app</item>
+    </string-array>
+</resources>

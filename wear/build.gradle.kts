@@ -130,6 +130,15 @@ dependencies {
 
   implementation(libs.androidx.datastore.preferences)
 
+  // Receives the sign-in request pushed by the phone companion app; see companion/.
+  implementation(libs.play.services.wearable)
+  implementation(project(":companion-protocol"))
+  // play-services-wearable transitively pulls in androidx.fragment 1.1.0, which lint flags as too
+  // old for the ActivityResult APIs MainActivity already uses
+  // (InvalidFragmentVersionForActivityResult). Nothing here uses Fragment directly - this only
+  // forces that transitive floor upward.
+  implementation(libs.androidx.fragment)
+
   testImplementation(libs.junit)
   testImplementation(libs.okhttp.mockwebserver)
   testImplementation(libs.kotlinx.coroutines.test)
