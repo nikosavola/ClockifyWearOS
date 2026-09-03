@@ -42,6 +42,12 @@ Runs lint, build, and test together, matching what CI runs on every push.
 See `just --list` for the full set of `device`/`emulator` recipes (connecting to a watch,
 installing the debug APK, streaming logcat, booting an emulator, and so on).
 
+## Manual QA for the phone companion app
+
+Changes to the companion sign-in flow (`mobile/`, `wear/src/main/java/.../companion/`,
+`companion-protocol/`) need a real paired phone and watch to verify - see
+[docs/COMPANION_QA.md](docs/COMPANION_QA.md) for the checklist.
+
 ## AI Usage Policy
 
 The use of AI tools to accelerate your development workflow, whether for prototyping, writing tests, or improving
