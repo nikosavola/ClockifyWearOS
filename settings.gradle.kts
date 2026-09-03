@@ -26,5 +26,7 @@ dependencyResolutionManagement {
 rootProject.name = "ClockifyWearOS"
 
 include(":wear")
+
 include(":companion-protocol")
+
 include(":mobile")
