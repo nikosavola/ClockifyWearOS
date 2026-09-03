@@ -42,7 +42,9 @@ class ApiKeyMessageResolverTest {
   @Test
   fun `rejected key maps to the unauthorized error code`() = runTest {
     val outcome =
-      resolver.resolve("bad-key", notSignedIn) { ClockifyResult.Failure(ClockifyError.Unauthorized) }
+      resolver.resolve("bad-key", notSignedIn) {
+        ClockifyResult.Failure(ClockifyError.Unauthorized)
+      }
 
     assertEquals(CompanionSignInOutcome.Failure(CompanionSignInErrorCode.UNAUTHORIZED), outcome)
   }
@@ -65,7 +67,10 @@ class ApiKeyMessageResolverTest {
       }
 
     assertFalse(signInCalled)
-    assertEquals(CompanionSignInOutcome.Failure(CompanionSignInErrorCode.ALREADY_SIGNED_IN), outcome)
+    assertEquals(
+      CompanionSignInOutcome.Failure(CompanionSignInErrorCode.ALREADY_SIGNED_IN),
+      outcome,
+    )
   }
 
   @Test

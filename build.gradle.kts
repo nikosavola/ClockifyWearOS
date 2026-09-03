@@ -37,7 +37,11 @@ sonar {
     // wear/wear/build/... and is never found.
     property(
       "sonar.coverage.jacoco.xmlReportPaths",
-      file("wear/build/reports/kover/reportDebug.xml").absolutePath,
+      listOf(
+          file("wear/build/reports/kover/reportDebug.xml"),
+          file("mobile/build/reports/kover/reportDebug.xml"),
+        )
+        .joinToString(",") { it.absolutePath },
     )
   }
 }
@@ -96,6 +100,9 @@ tasks.register("formatAll") {
     ":companion-protocol:ktfmtFormatScripts",
     ":companion-protocol:ktfmtFormatKotlin",
     ":companion-protocol:ktlintFormat",
+    ":mobile:ktfmtFormatScripts",
+    ":mobile:ktfmtFormatKotlin",
+    ":mobile:ktlintFormat",
   )
 }
 
@@ -117,6 +124,12 @@ tasks.register("lintAll") {
     ":companion-protocol:ktfmtCheckKotlin",
     ":companion-protocol:ktlintCheck",
     ":companion-protocol:detekt",
+    ":mobile:ktfmtCheckScripts",
+    ":mobile:ktfmtSourcesNotEmpty",
+    ":mobile:ktfmtCheckKotlin",
+    ":mobile:ktlintCheck",
+    ":mobile:detekt",
+    ":mobile:lintDebug",
   )
 }
 

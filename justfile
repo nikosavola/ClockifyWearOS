@@ -7,8 +7,15 @@
 max_workers := env('JUST_MAX_WORKERS', '2')
 sdk := env('ANDROID_HOME', env('ANDROID_SDK_ROOT', env('HOME') + '/Android/Sdk'))
 apk := 'wear/build/outputs/apk/debug/wear-debug.apk'
+mobile_apk := 'mobile/build/outputs/apk/debug/mobile-debug.apk'
 gradle := './gradlew --max-workers=' + max_workers
 package := 'fi.nikosavola.clockifywear'
+# Deliberately the same as `package`, not a typo: the phone and watch apps must share one
+# applicationId for the Wearable Data Layer API to let them find and message each other (see
+# mobile/build.gradle.kts's comment) - they only ever coexist on different physical devices
+# (phone vs watch), so the shared id never collides. Kept as its own variable so the mobile-*
+# recipes below read the same as the watch ones despite resolving to the same package string.
+mobile_package := package
 
 # List available recipes
 default:
@@ -34,25 +41,36 @@ install-pre:
 precommit:
     prek run --all-files
 
-# Build the debug APK
+# Build the debug APK (watch app)
 [group('build')]
 assemble:
     {{ gradle }} :wear:assembleDebug
+
+# Build the debug APK (phone companion app)
+[group('build')]
+assemble-mobile:
+    {{ gradle }} :mobile:assembleDebug
 
 # Remove build outputs
 [group('build')]
 clean:
     {{ gradle }} clean
 
-# Run the host-JVM unit tests
+# Run the host-JVM unit tests (watch app)
 [group('test')]
 test:
     {{ gradle }} :wear:testDebugUnitTest
 
-# Full local gate: lint, build and test, with --no-daemon to match CI exactly
+# Run the host-JVM unit tests (phone companion app)
+[group('test')]
+test-mobile:
+    {{ gradle }} :mobile:testDebugUnitTest
+
+# Full local gate: lint, build and test both apps, with --no-daemon to match CI exactly
 [group('test')]
 verify:
-    {{ gradle }} lintAll :wear:assembleDebug :wear:testDebugUnitTest --no-daemon
+    {{ gradle }} lintAll :wear:assembleDebug :wear:testDebugUnitTest \
+        :mobile:assembleDebug :mobile:testDebugUnitTest --no-daemon
 
 # List connected adb devices, including wireless ones
 [group('device')]
@@ -78,25 +96,40 @@ connect:
 pair ip_port code:
     {{ sdk }}/platform-tools/adb pair {{ ip_port }} {{ code }}
 
-# Build and install the debug APK on the connected device
+# Build and install the debug APK on the connected device (watch app)
 [group('device')]
 install: assemble
     {{ sdk }}/platform-tools/adb install -r {{ apk }}
 
-# Launch the app on the connected device
+# Build and install the debug APK on the connected device (phone companion app)
+[group('device')]
+install-mobile: assemble-mobile
+    {{ sdk }}/platform-tools/adb install -r {{ mobile_apk }}
+
+# Launch the watch app on the connected device
 [group('device')]
 launch:
     {{ sdk }}/platform-tools/adb shell am start -n {{ package }}/.ui.MainActivity
+
+# Launch the phone companion app on the connected device
+[group('device')]
+launch-mobile:
+    {{ sdk }}/platform-tools/adb shell am start -n {{ mobile_package }}/fi.nikosavola.clockifywear.mobile.MainActivity
 
 # Stream logcat filtered to this app's process, crashes and stderr
 [group('device')]
 logcat:
     {{ sdk }}/platform-tools/adb logcat -s AndroidRuntime System.err {{ package }}
 
-# Remove the app from the connected device
+# Remove the app from the connected device (watch app)
 [group('device')]
 uninstall:
     {{ sdk }}/platform-tools/adb uninstall {{ package }}
+
+# Remove the app from the connected device (phone companion app)
+[group('device')]
+uninstall-mobile:
+    {{ sdk }}/platform-tools/adb uninstall {{ mobile_package }}
 
 # Boot a Wear OS emulator; plain `-avd` alone segfaults on GPU/display init here, hence the flags
 [group('emulator')]
