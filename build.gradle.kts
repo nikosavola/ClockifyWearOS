@@ -40,6 +40,9 @@ sonar {
       listOf(
           file("wear/build/reports/kover/reportDebug.xml"),
           file("mobile/build/reports/kover/reportDebug.xml"),
+          // Plain Kotlin/JVM module (no Android variants), so its Kover task/report path drops
+          // the "Debug" suffix the two Android modules' variant-scoped ones have.
+          file("companion-protocol/build/reports/kover/report.xml"),
         )
         .joinToString(",") { it.absolutePath },
     )
