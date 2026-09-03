@@ -4,10 +4,21 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 
-/** In-memory [WatchLinkClient] for [SignInViewModelTest]; no Play Services involved. */
+/**
+ * In-memory [WatchLinkClient] for [SignInViewModelTest] and [SignInScreenTest]; no Play Services
+ * involved.
+ *
+ * @param nodeId what [findReachableWatchNode] returns; null simulates no watch found.
+ * @param sendSucceeds whether [sendApiKey] reports success.
+ * @param autoAck if set, [sendApiKey] emits `autoAck(requestId)` (when non-null) as soon as it's
+ *   called - safe to rely on because [SignInViewModel] starts collecting [signInResults] with
+ *   `CoroutineStart.UNDISPATCHED` before ever calling [sendApiKey], so a subscriber is already
+ *   attached. Leave null (the default) to control acks manually via [emitAck] instead.
+ */
 class FakeWatchLinkClient(
   private val nodeId: String? = "node-1",
   private val sendSucceeds: Boolean = true,
+  private val autoAck: ((requestId: String) -> SignInAck?)? = null,
 ) : WatchLinkClient {
   var sentApiKey: String? = null
     private set
@@ -32,6 +43,7 @@ class FakeWatchLinkClient(
     if (!sendSucceeds) return false
     sentToNodeId = nodeId
     sentApiKey = apiKey
+    autoAck?.invoke(requestId)?.let { mutableSignInResults.emit(it) }
     return true
   }
 

@@ -78,4 +78,11 @@ dependencies {
   testImplementation(libs.kotlinx.coroutines.test)
   testImplementation(libs.robolectric)
   testImplementation(libs.androidx.test.core)
+  testImplementation(platform(libs.androidx.compose.bom))
+  testImplementation(libs.androidx.compose.ui.test.junit4)
+  // Both platform(...) imports are needed: the implementation-only one above doesn't constrain
+  // the test/debug configurations, same reasoning as wear/build.gradle.kts's compose-ui-test
+  // dependencies (there pinned via the `compose-ui` version key instead of a BOM).
+  debugImplementation(platform(libs.androidx.compose.bom))
+  debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
