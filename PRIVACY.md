@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: 2026-08-14**
+**Last updated: 2026-09-03**
 
 ClockifyWearOS is a Wear OS client for [Clockify](https://clockify.me/). This page describes what
 data the app handles and where it goes. There is no company or server behind this app beyond the
@@ -30,6 +30,14 @@ Clockify's own handling of your data is covered by
 [CAKE.com's privacy policy](https://cake.com/privacy) (CAKE.com is Clockify's parent company),
 not this one.
 
+## The phone companion app
+
+If you use the phone companion app to enter your API key instead of typing it on the watch, that
+app sends the key to your paired watch over the Wearable Data Layer API - a device-local channel
+over Bluetooth, with no cloud relay or server in between. The phone app itself never talks to
+Clockify's API, stores nothing, and requests no internet permission; the watch does the actual
+sign-in exactly as described above.
+
 ## What the app does not do
 
 - No analytics, crash reporting, or advertising SDKs are included in the app.
@@ -38,13 +46,14 @@ not this one.
 
 ## Permissions
 
-The app requests:
+The watch app requests:
 
 - **Internet access**, to talk to Clockify's API.
 - **Notifications**, to show an ongoing notification while a timer is running, per Wear OS
   guidelines.
 
-Neither permission is used for anything beyond that.
+Neither permission is used for anything beyond that. The phone companion app requests no
+permissions at all.
 
 ## Source code
 

@@ -161,7 +161,46 @@ Once sections 1-5 are done once, each subsequent release is:
 
 ## 7. Known submission risk this pipeline does not address
 
-Signing in on-watch requires typing a ~48-character Clockify API key with the watch's own IME; a
-Play reviewer testing this app for the first time will hit that same friction with no demo account
-provided. That's a submission-review risk, not something `release.yml` or this doc's setup steps
-fix.
+Signing in on-watch requires typing a ~48-character Clockify API key with the watch's own IME.
+The phone companion app (`mobile/`, see below) mitigates this for real users, but a Play reviewer
+testing the watch app in isolation - without also installing and pairing the phone app - will
+still hit that same friction with no demo account provided. That's a submission-review risk, not
+something `release.yml` or this doc's setup steps fix.
+
+## 8. The phone companion app must ship under the *same* Play listing as the watch app
+
+`mobile/` is a second Gradle module and a second APK, but **not** a second, independently
+publishable app: Google Play services requires the phone and watch apps that talk to each other
+over the Wearable Data Layer API (`CapabilityClient`/`MessageClient`, used for the companion
+sign-in flow) to share both the exact same package name and the exact same signing certificate -
+see the "Wearable Data Layer API Security Requirements" note in
+[Access the wearable data layer](https://developer.android.com/training/wearables/data/overview).
+That's why `mobile/build.gradle.kts`'s `applicationId` is `fi.nikosavola.clockifywear`, identical
+to `wear/build.gradle.kts`'s - not a coincidence, and not safe to change independently in either
+module.
+
+Practically, this means:
+
+- **One Play Console app listing**, not two. Play distributes the correct APK to each device type
+  from a single listing when the wear module declares
+  `<uses-feature android:name="android.hardware.type.watch" />` (`wear/src/main/AndroidManifest.xml`
+  already does), so a phone gets `mobile`'s APK and a watch gets `wear`'s. There is no "associate a
+  Wear OS app to a phone app's listing" step for two *separate* listings, because that isn't the
+  shape this ships as.
+- **One signing identity for both APKs.** Whatever signing config section 1 sets up for `:wear`
+  must also sign `:mobile`'s release build - `mobile/build.gradle.kts` has no signing config of its
+  own yet (see below), and when one is added it needs to produce output signed with the same
+  certificate as `:wear`'s, not an independent one.
+- Sections 1-6 above, written before the `mobile/` module existed, still describe `:wear`'s own
+  signing/publishing pipeline accurately; extending `release.yml` to also build and publish
+  `:mobile`'s APK under the same listing is a deliberately deferred follow-up, not done yet. Until
+  then, `mobile/` is development-only: `./gradlew :mobile:assembleDebug`, or `just install-mobile`
+  with a device connected. Locally both modules' `assembleDebug` output happens to already share
+  the same Android debug keystore, so the signing requirement above doesn't surface as a local
+  development problem - only once real release signing exists for `:mobile` does it matter that it
+  isn't accidentally given its own independent identity.
+
+**Not yet verified end to end.** This companion flow (`CapabilityClient` discovery, the
+`MessageClient` request/reply) has only been built, unit-tested, and linted so far - not run on
+real paired hardware or emulators. Do that manual pairing test (see Verification in the PR/plan
+that introduced this) before relying on it, and again once release signing exists for `:mobile`.
