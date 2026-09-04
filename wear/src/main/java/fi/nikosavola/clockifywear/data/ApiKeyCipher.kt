@@ -82,6 +82,17 @@ class AndroidKeystoreApiKeyCipher : ApiKeyCipher {
         .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
         .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
         .setKeySize(256)
+        // Deliberately no setUserAuthenticationRequired(true). Two independent reasons:
+        // 1) It requires a secure lock screen at key-generation time (IllegalStateException
+        //    otherwise) and permanently invalidates the key if the lock screen is later removed -
+        //    not safe to depend on for a watch that may have no PIN set.
+        // 2) decrypt()/encrypt() run with no user present and no UI to handle the failure:
+        //    ClockifyTileService/ClockifyComplicationDataSourceService read the key on their own
+        //    system-driven refresh schedule, AppContainer primes it on any cold start, and the
+        //    phone companion's sign-in listener (ApiKeyMessageListenerService) writes it.
+        //    Auth-binding buys little anyway - the app's own UI is already unguarded once the
+        //    watch is unlocked, and the keystore already keeps the key material itself from ever
+        //    being extracted, which is what makes the persisted ciphertext useless without it.
         .build()
     return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
       .apply { init(spec) }
