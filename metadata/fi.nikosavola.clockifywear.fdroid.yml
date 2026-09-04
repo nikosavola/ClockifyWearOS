@@ -1,0 +1,59 @@
+# F-Droid build recipe for :wear's GMS-free "fdroid" flavor (see wear/build.gradle.kts and
+# PR #11's docs/RELEASING.md section 9 - a separate, not-yet-merged PR - for the full
+# submission process this feeds into).
+#
+# This is a CI-testing copy, not the literal content for the eventual fdroiddata merge request:
+# `commit` is a placeholder .github/workflows/fdroid.yml substitutes with the commit under test,
+# and the version fields track this repo's current unreleased state rather than a real tagged
+# release. Update both once a real release tag exists and this is actually submitted upstream.
+Categories:
+  - Time Tracker
+License: Apache-2.0
+# The app requires a Clockify account and every operation goes through Clockify's proprietary API
+# with no self-hostable/FOSS-backend alternative - matches F-Droid's AntiFeatures definition for
+# NonFreeNet ("promotes or depends entirely on a proprietary network service") exactly.
+AntiFeatures: NonFreeNet
+AuthorName: Niko Savola
+SourceCode: https://github.com/nikosavola/ClockifyWearOS
+IssueTracker: https://github.com/nikosavola/ClockifyWearOS/issues
+Changelog: https://github.com/nikosavola/ClockifyWearOS/releases
+Summary: Clockify time tracking on your Wear OS watch
+Description: |
+  A Clockify time-tracking client for Wear OS. Start and stop timers, switch
+  projects and tasks, and see the running entry on your wrist, without
+  reaching for your phone.
+
+  This build has no Google Play Services and no phone companion pairing
+  feature - sign in by entering your Clockify API key directly on the watch
+  (Profile settings > API key on clockify.me).
+RepoType: git
+Repo: https://github.com/nikosavola/ClockifyWearOS
+Builds:
+  - versionName: '0.1.1'
+    versionCode: 2
+    commit: __CI_COMMIT_SHA__
+    subdir: wear
+    gradle:
+      - fdroid
+    # mobile/ has real, unconditional GMS dependencies the scanner would otherwise flag, even
+    # though this build never touches that module - scandelete only, not also scanignore: the
+    # scanner checks scanignore first and returns early, so scandelete's entry would never
+    # register as used for the same path, aborting the build with an "Unused scandelete path"
+    # error.
+    #
+    # No scanignore entry for wear/build.gradle.kts's own play-only dependencies (e.g.
+    # play-services-wearable) - but not because flavor-based exclusion was proven to work.
+    # Confirmed empirically (added a control line and compared): the scanner's dependency-line
+    # regex is anchored at the start of the line and cannot match this repo's
+    # `"playImplementation"(...)`/`"fdroidImplementation"(...)` Kotlin string-invoke syntax at
+    # all (used because a typed accessor doesn't exist for a newly introduced flavor - see
+    # wear/build.gradle.kts) - it's blind to that line regardless of which flavor is being
+    # scanned, not correctly excluding it because of flavor scoping. A real GMS-flagging APK
+    # scan on F-Droid's own build server is the actual backstop for that dependency; this check
+    # only reliably catches an unconditional, unquoted non-free dependency added elsewhere.
+    scandelete:
+      - mobile
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: '0.1.1'
+CurrentVersionCode: 2
