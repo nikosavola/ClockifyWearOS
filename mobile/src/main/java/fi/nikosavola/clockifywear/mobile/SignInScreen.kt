@@ -100,7 +100,9 @@ private val SignInUiState.isBusy: Boolean
 @Composable
 private fun StatusMessage(uiState: SignInUiState) {
   when (uiState) {
-    is SignInUiState.Idle -> {}
+    is SignInUiState.Idle -> {
+      // Nothing to show before the user has done anything.
+    }
     is SignInUiState.Sending -> {
       Text(stringResource(R.string.sign_in_status_sending))
     }
