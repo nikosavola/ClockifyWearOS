@@ -27,7 +27,7 @@ jobs:
       # from a tag push, and a shared Gradle cache keyed across refs is a real cache-poisoning
       # surface for a job with that much blast radius. Releases are infrequent; the cache miss
       # cost is not worth it.
-      # JDK 26: the newest JDK Gradle 9.4.1 documents support for (17-26; confirmed via
+      # JDK 26: the newest JDK Gradle 9.6.0 documents support for (17-26; confirmed via
       # docs.gradle.org/current/userguide/compatibility.html), and a real GA Temurin release
       # (26.0.2, not early-access) - verified locally with a real assembleRelease/bundleRelease
       # build under it before pinning this, not just from the compatibility docs alone. Kept
