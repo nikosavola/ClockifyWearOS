@@ -51,6 +51,8 @@ interface WatchLinkClient : AutoCloseable {
   /** False if the message couldn't even be handed to Play Services for delivery. */
   suspend fun sendApiKey(nodeId: String, apiKey: String, requestId: String): Boolean
 
+  // Default no-op: only PlayServicesWatchLinkClient holds anything worth releasing (its
+  // MessageClient listener) - fakes in tests have nothing to close and don't need to override it.
   override fun close() {}
 }
 
