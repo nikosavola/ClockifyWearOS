@@ -74,14 +74,34 @@ android {
     }
   }
 
+  // "play": today's app, ships to the Play Store, talks to the phone companion app over Play
+  // Services Wearable. "fdroid": no Google Play Services anywhere in its dependency tree, for a
+  // future F-Droid submission - on-watch API key entry still works, only the companion pairing
+  // feature is unavailable (it inherently needs GMS on both watch and phone). Distinct
+  // applicationId because a Play-signed and an F-Droid-signed build of the same package can never
+  // update each other; these two flavors are never meant to be cross-installed anyway.
+  flavorDimensions += "distribution"
+  productFlavors {
+    create("play") {
+      dimension = "distribution"
+      // Signing is flavor-scoped (shrink/proguard below stay build-type-scoped, applying to both):
+      // only a "play" release should ever carry the real Play upload signature. A future F-Droid
+      // submission signs "fdroid" with F-Droid's own key, never this one.
+      if (hasReleaseSigningConfig) {
+        signingConfig = signingConfigs.getByName("release")
+      }
+    }
+    create("fdroid") {
+      dimension = "distribution"
+      applicationIdSuffix = ".fdroid"
+    }
+  }
+
   buildTypes {
     release {
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      if (hasReleaseSigningConfig) {
-        signingConfig = signingConfigs.getByName("release")
-      }
     }
   }
   compileOptions {
@@ -102,7 +122,14 @@ kotlin { jvmToolchain(21) }
 // CI credentials come from the ANDROID_PUBLISHER_CREDENTIALS env var (set by release.yml from the
 // PLAY_SERVICE_ACCOUNT_JSON secret); serviceAccountCredentials is deliberately left unset since
 // that's the local-dev file-path option, not the CI one.
-play { track.set("internal") }
+// Disabled by default and only re-enabled for the "play" flavor below: the fdroid flavor must
+// never get a publish task wired up, on this or any distribution flavor added later.
+play {
+  enabled.set(false)
+  track.set("internal")
+}
+
+android.playConfigs { register("play") { enabled.set(true) } }
 
 dependencies {
   implementation(libs.kotlin.stdlib)
@@ -130,14 +157,20 @@ dependencies {
 
   implementation(libs.androidx.datastore.preferences)
 
-  // Receives the sign-in request pushed by the phone companion app; see companion/.
-  implementation(libs.play.services.wearable)
-  implementation(project(":companion-protocol"))
+  // Receives the sign-in request pushed by the phone companion app; see companion/. Play-only:
+  // the fdroid flavor has no Google Play Services and no companion pairing feature at all.
+  // String-invoke form on purpose, not a temporary wart: the "play" flavor is created by the
+  // productFlavors block above, which runs after Kotlin DSL accessors are generated for this
+  // script, so a typed playImplementation(...) accessor never exists here (unlike
+  // debugImplementation
+  // below, whose "debug"/"release" build types are contributed by the plugin itself, upfront).
+  "playImplementation"(libs.play.services.wearable)
+  "playImplementation"(project(":companion-protocol"))
   // play-services-wearable transitively pulls in androidx.fragment 1.1.0, which lint flags as too
   // old for the ActivityResult APIs MainActivity already uses
   // (InvalidFragmentVersionForActivityResult). Nothing here uses Fragment directly - this only
-  // forces that transitive floor upward.
-  implementation(libs.androidx.fragment)
+  // forces that transitive floor upward, so it's only needed where play-services-wearable is.
+  "playImplementation"(libs.androidx.fragment)
 
   testImplementation(libs.junit)
   testImplementation(libs.okhttp.mockwebserver)

@@ -6,7 +6,9 @@
 
 max_workers := env('JUST_MAX_WORKERS', '2')
 sdk := env('ANDROID_HOME', env('ANDROID_SDK_ROOT', env('HOME') + '/Android/Sdk'))
-apk := 'wear/build/outputs/apk/debug/wear-debug.apk'
+# The "play" flavor: full-featured, has the phone companion pairing feature - what a developer
+# wants installed day to day. See wear/build.gradle.kts for the "play"/"fdroid" flavor split.
+apk := 'wear/build/outputs/apk/play/debug/wear-play-debug.apk'
 mobile_apk := 'mobile/build/outputs/apk/debug/mobile-debug.apk'
 gradle := './gradlew --max-workers=' + max_workers
 package := 'fi.nikosavola.clockifywear'
@@ -41,10 +43,10 @@ install-pre:
 precommit:
     prek run --all-files
 
-# Build the debug APK (watch app)
+# Build the debug APK (watch app, "play" flavor)
 [group('build')]
 assemble:
-    {{ gradle }} :wear:assembleDebug
+    {{ gradle }} :wear:assemblePlayDebug
 
 # Build the debug APK (phone companion app)
 [group('build')]
@@ -56,10 +58,10 @@ assemble-mobile:
 clean:
     {{ gradle }} clean
 
-# Run the host-JVM unit tests (watch app)
+# Run the host-JVM unit tests (watch app, "play" flavor - run `just verify` for both flavors)
 [group('test')]
 test:
-    {{ gradle }} :wear:testDebugUnitTest
+    {{ gradle }} :wear:testPlayDebugUnitTest
 
 # Run the host-JVM unit tests (phone companion app)
 [group('test')]
@@ -71,10 +73,11 @@ test-mobile:
 test-protocol:
     {{ gradle }} :companion-protocol:test
 
-# Full local gate: lint, build and test all modules, with --no-daemon to match CI exactly
+# Full local gate: lint, build and test all modules (both :wear flavors), matching CI exactly
 [group('test')]
 verify:
-    {{ gradle }} lintAll :wear:assembleDebug :wear:testDebugUnitTest \
+    {{ gradle }} lintAll :wear:assemblePlayDebug :wear:testPlayDebugUnitTest \
+        :wear:assembleFdroidDebug :wear:testFdroidDebugUnitTest \
         :mobile:assembleDebug :mobile:testDebugUnitTest :companion-protocol:test --no-daemon
 
 # List connected adb devices, including wireless ones

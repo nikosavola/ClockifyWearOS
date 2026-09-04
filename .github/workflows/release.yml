@@ -55,30 +55,33 @@ jobs:
           echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$keystore_path"
           echo "RELEASE_KEYSTORE_PATH=$keystore_path" >> "$GITHUB_ENV"
       - name: Build signed release APK and AAB
+        # Explicitly the "play" flavor only: the flavor-less assembleRelease/bundleRelease
+        # aggregate tasks would also build the "fdroid" flavor (see wear/build.gradle.kts) and
+        # this job only ever wants the one that ships to the Play Store.
         env:
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
-        run: ./gradlew :wear:assembleRelease :wear:bundleRelease --no-daemon
+        run: ./gradlew :wear:assemblePlayRelease :wear:bundlePlayRelease --no-daemon
       - name: Create GitHub Release
         # Deliberate choice over a `gh release` script step: multi-file glob asset upload is
         # worth the well-known action here.
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2 # zizmor: ignore[superfluous-actions]
         with:
           files: |
-            wear/build/outputs/apk/release/*.apk
-            wear/build/outputs/bundle/release/*.aab
+            wear/build/outputs/apk/play/release/*.apk
+            wear/build/outputs/bundle/playRelease/*.aab
       - name: Upload AAB as a workflow artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-aab
-          path: wear/build/outputs/bundle/release/*.aab
+          path: wear/build/outputs/bundle/playRelease/*.aab
           if-no-files-found: error
       - name: Upload APK as a workflow artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: release-apk
-          path: wear/build/outputs/apk/release/*.apk
+          path: wear/build/outputs/apk/play/release/*.apk
           if-no-files-found: error
   check-play-secret:
     name: Check Play Store Secret
@@ -135,4 +138,4 @@ jobs:
         # signed instead of having this task build its own.
         env:
           ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-        run: ./gradlew :wear:publishReleaseBundle --artifact-dir release-aab --no-daemon
+        run: ./gradlew :wear:publishPlayReleaseBundle --artifact-dir release-aab --no-daemon

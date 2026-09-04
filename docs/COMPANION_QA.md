@@ -8,7 +8,7 @@ neither a two-emulator rig nor a device farm can stand in for it hermetically. E
 about this flow (protocol encoding, sign-in logic, UI state) has unit/Compose test coverage
 instead; this checklist covers only the parts that genuinely need two real, paired devices.
 
-Run this before any release that touches `mobile/`, `wear/src/main/java/.../companion/`, or
+Run this before any release that touches `mobile/`, `wear/src/play/java/.../companion/`, or
 `companion-protocol/`, and after upgrading `play-services-wearable`.
 
 ## Setup

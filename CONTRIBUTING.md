@@ -44,7 +44,7 @@ installing the debug APK, streaming logcat, booting an emulator, and so on).
 
 ## Manual QA for the phone companion app
 
-Changes to the companion sign-in flow (`mobile/`, `wear/src/main/java/.../companion/`,
+Changes to the companion sign-in flow (`mobile/`, `wear/src/play/java/.../companion/`,
 `companion-protocol/`) need a real paired phone and watch to verify - see
 [docs/COMPANION_QA.md](docs/COMPANION_QA.md) for the checklist.
 

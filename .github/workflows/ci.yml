@@ -63,26 +63,35 @@ jobs:
         with:
           packages: 'platforms;android-36 build-tools;36.0.0'
       - name: Build and Run Unit Tests
-        # koverXmlReportDebug/koverXmlReport depend on their module's test task, so this both runs
-        # every suite and generates the coverage reports Codecov reads below.
+        # koverXmlReportPlayDebug/koverXmlReport depend on their module's test task, so this both
+        # runs every suite and generates the coverage reports Codecov/Sonar read below.
         # companion-protocol is a plain Kotlin/JVM module (no Android variants), so its Kover task
         # is koverXmlReport, not koverXmlReportDebug - see companion-protocol/build.gradle.kts.
+        # :wear builds/tests both the "play" (Play Store, has Google Play Services) and "fdroid"
+        # (no GMS, see wear/build.gradle.kts) flavors - only "play"'s coverage is uploaded below,
+        # since "fdroid" is a strict subset of "play"'s code and would just double-count it.
         run: |
-          ./gradlew :wear:assembleDebug :wear:koverXmlReportDebug \
+          ./gradlew :wear:assemblePlayDebug :wear:testPlayDebugUnitTest :wear:koverXmlReportPlayDebug \
+            :wear:assembleFdroidDebug :wear:testFdroidDebugUnitTest \
             :mobile:assembleDebug :mobile:koverXmlReportDebug \
             :companion-protocol:koverXmlReport --no-daemon
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@e53489f4d376d79066609109e7a95a29eb3740b1 # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: wear/build/reports/kover/reportDebug.xml,mobile/build/reports/kover/reportDebug.xml,companion-protocol/build/reports/kover/report.xml
+          files: wear/build/reports/kover/reportPlayDebug.xml,mobile/build/reports/kover/reportDebug.xml,companion-protocol/build/reports/kover/report.xml
           fail_ci_if_error: true
       - name: Upload test results to Codecov
+        # "play" only, not "fdroid" too: nearly every wear test class runs under both flavors with
+        # identical names (fdroid just lacks the 4-file companion package's tests), so uploading
+        # both would report each shared test twice per run - Codecov's flaky-test heuristics would
+        # read a variant-specific failure as the same test both passing and failing. The fdroid
+        # build+test still gates this job's pass/fail either way.
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1.2.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: wear/build/test-results/testDebugUnitTest/*.xml,mobile/build/test-results/testDebugUnitTest/*.xml,companion-protocol/build/test-results/test/*.xml
+          files: wear/build/test-results/testPlayDebugUnitTest/*.xml,mobile/build/test-results/testDebugUnitTest/*.xml,companion-protocol/build/test-results/test/*.xml
       - name: Upload Test Reports on Failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

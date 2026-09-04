@@ -11,7 +11,7 @@ import java.util.UUID
 // mistaken for the response to a later retry - there is nothing else identifying which attempt a
 // given message belongs to.
 
-/** Matches the `android_wear_capabilities` entry in `wear/src/main/res/values/wear.xml`. */
+/** Matches the `android_wear_capabilities` entry in `wear/src/play/res/values/wear.xml`. */
 const val WATCH_CAPABILITY = "clockify_wear_app"
 
 private const val API_KEY_REQUEST_PATH_PREFIX = "/clockify/api-key-request/"
