@@ -217,3 +217,105 @@ This can't be automated in CI - Wear OS device pairing is an interactive, Google
 flow with no scriptable ADB/CLI equivalent, so neither a two-emulator rig nor a device farm can
 stand in for it hermetically. See [docs/COMPANION_QA.md](COMPANION_QA.md) for the checklist to
 re-run before any release that touches the companion sign-in flow.
+
+## 9. Submitting the `fdroid` flavor to F-Droid
+
+`:wear`'s `fdroid` product flavor (see `wear/build.gradle.kts`) has zero Google Play Services in
+its dependency tree and a distinct `applicationId` (`fi.nikosavola.clockifywear.fdroid`), making it
+policy-eligible for F-Droid's official repo. `mobile/` and the `play` flavor are never submitted -
+F-Droid only ever builds one variant per metadata entry, and `mobile`'s entire purpose is GMS
+sync, so there's nothing GMS-free to offer there.
+
+**Submission is a merge request against a separate GitLab-hosted repo, not something that happens
+in this GitHub repo.** F-Droid's build recipes live in `gitlab.com/fdroid/fdroiddata`, one YAML
+file per app at `metadata/<applicationId>.yml`. There's no lighter "point F-Droid at this GitHub
+repo" alternative for the actual build recipe - only store-listing text/screenshots can optionally
+live closer to the app's own repo. Submitting requires a GitLab account and a fork of
+`fdroiddata`, both outside this repo's tooling.
+
+**Blocker as of this writing: no tagged release contains the `fdroid` flavor yet.** F-Droid builds
+from a specific git tag (the recipe's `commit:` field, see below), and the current latest tag
+(`v0.1.1`) predates the `play`/`fdroid` flavor split - building `fdroid` at that tag would fail
+outright.
+Cutting a new release (section 6 above) is a prerequisite, not optional - and note that
+`release.yml`'s `push: tags: v*` trigger always builds and creates a GitHub Release from that tag,
+plus publishes the `play` flavor to the Play Store's internal track *if* `PLAY_SERVICE_ACCOUNT_JSON`
+is configured (section 4/5 - `publish-play-store` skips gracefully otherwise). Assume that secret
+is set in this repo unless you've deliberately unset it, and time the tag deliberately either way,
+not as an F-Droid-only side effect.
+
+**The non-free-code scanner cannot see this repo's flavor-scoped dependency syntax at all -
+confirmed with a real control-line test, not just reasoned about from the scanner source.**
+`scanner.py` matches dependency-declaration lines with a regex anchored at the start of the line
+(after whitespace); `wear/build.gradle.kts`'s `"playImplementation"(...)`/`"fdroidImplementation"(...)`
+Kotlin string-invoke syntax (used because a typed accessor doesn't exist for a newly introduced
+flavor - see that file's own comment) starts with a `"`, which the anchored regex can never match.
+Proved this by adding a throwaway unquoted `implementation(libs.play.services.wearable)` line next
+to the real quoted one and re-scanning: the scanner caught the unquoted control line and missed
+the quoted one right beside it, in the same file, same scan. So the scanner reporting zero
+problems for `wear/build.gradle.kts` reflects "this syntax is invisible to it", not "flavor-based
+exclusion correctly ran" - those would look identical from the scanner's output alone, and only
+the control-line test tells them apart.
+
+Practical upshot: this check cannot verify that flavor-based GMS exclusion keeps working as
+`wear/build.gradle.kts` changes - a real GMS-scanning APK build on F-Droid's own infrastructure is
+the actual backstop for that. It still reliably catches a genuinely unconditional, unquoted
+non-free dependency added anywhere, which is exactly what makes `mobile/`'s `scandelete` entry
+necessary (that module's GMS dependencies are ordinary unquoted `implementation(...)` calls, not
+flavor-gated at all, so the scanner sees and flags them just fine).
+
+**The actual recipe is a real, CI-tested file, not a hand-copied block in this doc - added in
+PR #13 (a separate, not-yet-merged PR; merge it alongside or before this one).** It lives at
+`metadata/fi.nikosavola.clockifywear.fdroid.yml`, with `.github/workflows/fdroid.yml` running
+`fdroid lint` + `fdroid scanner` against it on every push/PR (informationally - see that
+workflow's own comments). Keeping the recipe in one real, checked place instead of also
+duplicating it here as prose stops the two from drifting apart - this doc previously carried its
+own inline draft that separately went out of sync more than once (an invalid `Categories: [Time]`
+value, a `versionCode: TODO` placeholder that `fdroid lint` actually rejects since that field must
+be an integer, not a string).
+
+That tracked file's `commit: __CI_COMMIT_SHA__` and current version fields are CI-testing
+placeholders (see its own header comment) - it tracks this repo's current unreleased state for
+continuous checking, not the literal content to paste into the real submission. Building the
+actual `fdroiddata` MR means copying its content with those placeholders replaced by the real
+release tag's values, per the checklist below.
+
+Notes on fields that aren't self-explanatory:
+
+- `UpdateCheckMode: Tags` + `AutoUpdateMode: Version`: F-Droid's own tooling scans tagged
+  revisions for the highest `versionCode` and proposes new `Builds:` entries automatically on
+  future releases - no need to hand-edit the metadata for every subsequent tag once the first
+  entry exists.
+- `novcheck` is deliberately absent: F-Droid verifies the built APK's actual `versionCode`/
+  `versionName` against what the metadata declares by default, which is the right default here.
+- Signing is fully independent of this project's own Play upload keystore - F-Droid builds from
+  source on its own infrastructure and signs with its own key. No conflict with the `play` flavor's
+  Play Store signing, and none possible: `fdroid`'s distinct `applicationId` was never Play-signed.
+
+**Timeline**: F-Droid's own docs cite 24-48 hours from a merged metadata change to appearing in
+the repo - but getting a new-app merge request *reviewed and merged* in the first place has a much
+less predictable queue (recent community reports range from about a month to several months).
+Budget for that, not the post-merge number.
+
+**Test locally with the real commit before opening the MR, not after.** With `Repo:` pointed at
+the real GitHub URL (as the tracked file has it), `fdroid build`/`fdroid scanner` fetch that
+remote before checking out `commit:` - so a prospective, not-yet-pushed commit's SHA can't
+resolve there at all. `.github/workflows/fdroid.yml` sidesteps this for its own continuous
+checking by substituting `Repo:` to the local checkout path at run time; do the same for a manual
+local preflight against a commit that isn't pushed yet, or just push the commit first and use the
+real URL once it's reachable.
+
+Concrete remaining steps, in order - test before tagging, not after, since cutting the tag can
+also publish a real Play release (see above):
+
+1. Bump `versionName`/`versionCode` in `wear/build.gradle.kts` (section 6) and commit, but don't
+   tag yet.
+2. Update `metadata/fi.nikosavola.clockifywear.fdroid.yml`'s `Builds[0].versionName`/`versionCode`
+   to match, and run `fdroid build`/`fdroid lint` locally against that commit (see the note above
+   on `Repo:` if it isn't pushed yet) - this is the actual preflight, and it needs to pass before
+   anything below happens.
+3. Only once that passes: tag the commit (section 6) and push the tag. Update the metadata file's
+   `commit:` from its CI-testing placeholder to that real tag, and `CurrentVersion`/
+   `CurrentVersionCode` to match.
+4. Fork `gitlab.com/fdroid/fdroiddata`, add `metadata/fi.nikosavola.clockifywear.fdroid.yml` with
+   that verified content, and open the merge request.
