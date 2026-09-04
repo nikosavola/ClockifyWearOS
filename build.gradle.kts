@@ -38,13 +38,26 @@ sonar {
     property(
       "sonar.coverage.jacoco.xmlReportPaths",
       listOf(
-          file("wear/build/reports/kover/reportDebug.xml"),
+          // "play" only, not "fdroid" too: fdroid is a strict subset of play's code (same files
+          // minus the 4-file companion package), so adding its report would just double-count the
+          // shared code's coverage rather than add anything new.
+          file("wear/build/reports/kover/reportPlayDebug.xml"),
           file("mobile/build/reports/kover/reportDebug.xml"),
           // Plain Kotlin/JVM module (no Android variants), so its Kover task/report path drops
           // the "Debug" suffix the two Android modules' variant-scoped ones have.
           file("companion-protocol/build/reports/kover/report.xml"),
         )
         .joinToString(",") { it.absolutePath },
+    )
+    // ApiKeyMessageListenerService.kt is a thin WearableListenerService wrapper with 0% coverage
+    // on main already (same as this codebase's other thin service entry points, e.g.
+    // ClockifyTileService/ClockifyComplicationDataSourceService) - its actual logic is extracted
+    // into ApiKeyMessageDispatcher, which is fully tested. Moving it to wear/src/play/ for the
+    // play/fdroid flavor split makes SonarCloud treat its unchanged 0%-covered lines as "new" for
+    // this PR's new-code coverage gate, which would otherwise fail on a pure file move.
+    property(
+      "sonar.coverage.exclusions",
+      "wear/src/play/java/fi/nikosavola/clockifywear/companion/ApiKeyMessageListenerService.kt",
     )
   }
 }
@@ -119,7 +132,8 @@ tasks.register("lintAll") {
     ":wear:ktfmtCheckKotlin",
     ":wear:ktlintCheck",
     ":wear:detekt",
-    ":wear:lintDebug",
+    ":wear:lintPlayDebug",
+    ":wear:lintFdroidDebug",
     // No :companion-protocol:lintDebug - it's a plain Kotlin/JVM module, not an Android one, so
     // there's no Android Lint task for it at all.
     ":companion-protocol:ktfmtCheckScripts",
@@ -135,5 +149,13 @@ tasks.register("lintAll") {
     ":mobile:lintDebug",
   )
 }
+
+// Without this, Sonar picks "the first variant of type debug" by its own default rule, which
+// since :wear now has two product flavors could just as well resolve to fdroidDebug (the two
+// flavors aren't ordered by declaration) - that would silently drop wear/src/play/** (the
+// companion feature) from analysis entirely. Scoped to :wear only, from the root, since that's
+// where multi-module per-project Sonar properties are configured - :mobile has no flavors, so it
+// stays on the plugin's own default and is unaffected by this.
+project(":wear") { sonar { properties { property("sonar.androidVariant", "playDebug") } } }
 
 tasks.register("clean", Delete::class) { delete(rootProject.layout.buildDirectory) }

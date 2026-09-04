@@ -62,10 +62,11 @@ Settings -> Secrets and variables -> Actions -> New repository secret. Add all f
 These are consumed by `.github/workflows/release.yml`'s build job and by `wear/build.gradle.kts`'s
 signing config (as `RELEASE_KEYSTORE_PATH` + the other three env vars - the workflow decodes the
 base64 secret to a temp file and exports that path itself, so there's no fifth secret for the
-path). Setting all four is required for `assembleRelease`/`bundleRelease` to produce a signed
-artifact; setting none of them leaves `release` unsigned (this is also what a local
-`./gradlew :wear:assembleDebug` sees, without any of this configured - the build stays unaffected
-for day-to-day development).
+path). Setting all four is required for `assemblePlayRelease`/`bundlePlayRelease` to produce a
+signed artifact (signing is wired to the `play` flavor only - see wear/build.gradle.kts); setting
+none of them leaves `playRelease` unsigned (this is also what a local `./gradlew
+:wear:assemblePlayDebug` sees, without any of this configured - the build stays unaffected for
+day-to-day development).
 
 **Local signed builds without exporting env vars**: create a gitignored `keystore.properties` in
 the repo root with
@@ -86,7 +87,7 @@ over the env vars per key, so either mechanism (or a mix) works.
 This is what backs the `PLAY_SERVICE_ACCOUNT_JSON` secret, used by the `publish-play-store` job.
 Publishing itself is done by the [Gradle Play Publisher](https://github.com/Triple-T/gradle-play-publisher)
 plugin (`com.github.triplet.play`, configured in `wear/build.gradle.kts`), not a separate GitHub
-Action - `release.yml` passes the secret to `./gradlew :wear:publishReleaseBundle` via the
+Action - `release.yml` passes the secret to `./gradlew :wear:publishPlayReleaseBundle` via the
 `ANDROID_PUBLISHER_CREDENTIALS` env var, which the plugin reads directly. That's the CI path; the
 `serviceAccountCredentials` property in the `play {}` block is deliberately left unset since that's
 the local-dev, file-on-disk alternative, not the CI one.
@@ -128,8 +129,10 @@ Before the first tag push that's meant to reach the Play Store:
    questionnaire, target audience, data safety form. Screenshots already exist at
    `docs/screenshots/*.png`; use those for the listing's screenshot requirement.
 2. Manually upload one release to the **internal testing** track through the Play Console UI -
-   either a `bundleRelease` AAB built locally, or the AAB attached to a `release.yml` run's GitHub
-   Release. This satisfies the "at least one release already exists" requirement.
+   either a `bundlePlayRelease` AAB built locally (not the flavor-less `bundleRelease`, which
+   would also build the GMS-free `fdroid` flavor - see wear/build.gradle.kts), or the AAB attached
+   to a `release.yml` run's GitHub Release. This satisfies the "at least one release already
+   exists" requirement.
 
 Only after this has happened once does the `publish-play-store` job have an existing release to
 attach subsequent uploads to.

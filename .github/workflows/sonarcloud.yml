@@ -43,13 +43,15 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         # No plain `build` task exists at the root of this Android project (unlike the SonarQube
         # docs' generic example), so build the app and run its tests explicitly before analysis.
-        # Each module's koverXmlReportDebug/koverXmlReport generates the coverage report
+        # Each module's koverXmlReportPlayDebug/koverXmlReport generates the coverage report
         # build.gradle.kts's sonar.coverage.jacoco.xmlReportPaths points at - without running a
         # given module's report task here, Sonar finds no report for that module's files and
         # always shows 0% coverage on them, regardless of how much of the diff tests actually
         # cover (this bit :mobile and :companion-protocol until both were added below - ci.yml's
         # own coverage upload to Codecov is a separate workflow/job and doesn't feed this one).
+        # Only :wear's "play" flavor feeds Sonar (see build.gradle.kts) - "fdroid" still needs to
+        # build+test successfully, which ci.yml verifies separately.
         run: |
-          ./gradlew :wear:assembleDebug :wear:koverXmlReportDebug \
+          ./gradlew :wear:assemblePlayDebug :wear:koverXmlReportPlayDebug \
             :mobile:assembleDebug :mobile:koverXmlReportDebug \
             :companion-protocol:koverXmlReport sonar --no-daemon

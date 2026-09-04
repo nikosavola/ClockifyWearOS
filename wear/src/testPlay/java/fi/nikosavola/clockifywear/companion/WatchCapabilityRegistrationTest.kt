@@ -11,7 +11,7 @@ import org.robolectric.RobolectricTestRunner
 
 /**
  * `WATCH_CAPABILITY` (in `companion-protocol`) and the `android_wear_capabilities` array (in
- * `wear/src/main/res/values/wear.xml`) are kept in sync by a code comment only - Play Services
+ * `wear/src/play/res/values/wear.xml`) are kept in sync by a code comment only - Play Services
  * reads the resource by name at runtime, with nothing at compile time checking it matches the
  * constant the mobile app queries for. A rename on either side would make
  * `CapabilityClient.getCapability(WATCH_CAPABILITY, ...)` find zero nodes and the whole companion
