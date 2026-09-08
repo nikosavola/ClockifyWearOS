@@ -1,0 +1,3 @@
+A Clockify time-tracking client for Wear OS. Start and stop timers, switch projects and tasks, and see the running entry on your wrist, without reaching for your phone.
+
+This build has no Google Play Services and no phone companion pairing feature - sign in by entering your Clockify API key directly on the watch (Profile settings > API key on clockify.me).
