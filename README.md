@@ -31,9 +31,8 @@ key once. See [Configuration](#configuration) below and [Known limitations](#kno
 
 ## Installation
 
-Not yet published to the Play Store (see [docs/RELEASING.md](docs/RELEASING.md) for the release
-pipeline). The phone companion app (`mobile/`) isn't published or released through that pipeline
-yet at all - it currently only exists as a debug build. Until then:
+Not yet published to the Play Store. The phone companion app (`mobile/`) isn't published or
+released either - it currently only exists as a debug build. Until then:
 
 - **Prebuilt APK** (watch app): grab the latest APK from
   [Releases](https://github.com/nikosavola/ClockifyWearOS/releases) and sideload it with
@@ -49,9 +48,7 @@ Wear OS.
 
 **Alternative: the phone companion app** (`mobile/`). Install it on the phone paired with your
 watch, paste your Clockify API key there, and tap "Sign in on watch" - it's sent to the watch over
-Bluetooth and validated there, with the result shown back on the phone. Verified end to end on
-real paired hardware (device discovery, sign-in, and the already-signed-in guard all confirmed
-working - see [docs/RELEASING.md](docs/RELEASING.md) section 8), but not yet published to the
+Bluetooth and validated there, with the result shown back on the phone. Not yet published to the
 Play Store - build and side-load it via `just install-mobile` (see
 [Contributing](#contributing)) if you want to try it.
 

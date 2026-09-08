@@ -15,8 +15,7 @@ plugins {
   alias(libs.plugins.compose.compiler) apply false
   alias(libs.plugins.kotlin.serialization) apply false
   // Module-only (wear/build.gradle.kts), same apply-false-at-root pattern as the plugins above:
-  // it uploads already-signed release artifacts to the Play Store and doesn't sign anything
-  // itself (see docs/RELEASING.md).
+  // it uploads already-signed release artifacts to the Play Store and doesn't sign anything itself.
   alias(libs.plugins.play.publisher) apply false
   // Module-only (wear/build.gradle.kts), same apply-false-at-root pattern as play.publisher above.
   alias(libs.plugins.kover) apply false

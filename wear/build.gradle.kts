@@ -14,7 +14,7 @@ plugins {
 // building a signed release locally without exporting env vars), falling back to the
 // RELEASE_KEYSTORE_PATH/RELEASE_KEYSTORE_PASSWORD/RELEASE_KEY_ALIAS/RELEASE_KEY_PASSWORD env vars
 // CI injects, falling back to leaving `release` unsigned if neither is present. This keeps
-// assembleDebug and day-to-day dev working with zero signing setup. See docs/RELEASING.md.
+// assembleDebug and day-to-day dev working with zero signing setup.
 val keystoreProperties =
   Properties().apply {
     val propertiesFile = rootProject.file("keystore.properties")
