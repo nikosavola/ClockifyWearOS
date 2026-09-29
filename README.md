@@ -97,7 +97,7 @@ repositories {
   }
 }
 
-dependencies { implementation("fi.nikosavola:clockify-api:0.1.3") }
+dependencies { implementation("fi.nikosavola:clockify-api:0.1.4") }
 ```
 
 Publishing runs from [.github/workflows/publish.yml](.github/workflows/publish.yml) on a `v*` tag. The `:companion-protocol` module is deliberately not published: it is the wire contract between this repository's own phone and watch apps, so nothing outside it can consume the module usefully.
