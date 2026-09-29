@@ -152,8 +152,14 @@ dependencies {
   implementation(libs.kotlinx.serialization.json)
 
   implementation(libs.retrofit)
-  implementation(libs.retrofit.converter.kotlinx.serialization)
   implementation(libs.okhttp)
+
+  // The Clockify REST client (ClockifyApi, the DTOs, createClockifyApi) lives in its own module so
+  // it can also be published standalone - see ../clockify-api/build.gradle.kts. It moved with its
+  // package names untouched, so nothing here needed an import change; the kotlinx-serialization
+  // converter it uses is now only declared there. Shared, not play-only: every flavor talks to the
+  // Clockify API, and the module has no Google Play Services dependency to keep "fdroid" clean of.
+  implementation(project(":clockify-api"))
 
   implementation(libs.androidx.datastore.preferences)
 

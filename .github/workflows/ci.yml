@@ -65,8 +65,8 @@ jobs:
       - name: Build and Run Unit Tests
         # koverXmlReportPlayDebug/koverXmlReport depend on their module's test task, so this both
         # runs every suite and generates the coverage reports Codecov/Sonar read below.
-        # companion-protocol is a plain Kotlin/JVM module (no Android variants), so its Kover task
-        # is koverXmlReport, not koverXmlReportDebug - see companion-protocol/build.gradle.kts.
+        # companion-protocol and clockify-api are plain Kotlin/JVM modules (no Android variants), so
+        # their Kover task is koverXmlReport, not koverXmlReportDebug - see their build.gradle.kts.
         # :wear builds/tests both the "play" (Play Store, has Google Play Services) and "fdroid"
         # (no GMS, see wear/build.gradle.kts) flavors - only "play"'s coverage is uploaded below,
         # since "fdroid" is a strict subset of "play"'s code and would just double-count it.
@@ -74,12 +74,13 @@ jobs:
           ./gradlew :wear:assemblePlayDebug :wear:testPlayDebugUnitTest :wear:koverXmlReportPlayDebug \
             :wear:assembleFdroidDebug :wear:testFdroidDebugUnitTest \
             :mobile:assembleDebug :mobile:koverXmlReportDebug \
-            :companion-protocol:koverXmlReport --no-daemon
+            :companion-protocol:koverXmlReport \
+            :clockify-api:test :clockify-api:koverXmlReport --no-daemon
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@e53489f4d376d79066609109e7a95a29eb3740b1 # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: wear/build/reports/kover/reportPlayDebug.xml,mobile/build/reports/kover/reportDebug.xml,companion-protocol/build/reports/kover/report.xml
+          files: wear/build/reports/kover/reportPlayDebug.xml,mobile/build/reports/kover/reportDebug.xml,companion-protocol/build/reports/kover/report.xml,clockify-api/build/reports/kover/report.xml
           fail_ci_if_error: true
       - name: Upload test results to Codecov
         # "play" only, not "fdroid" too: nearly every wear test class runs under both flavors with
@@ -91,7 +92,7 @@ jobs:
         uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1.2.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: wear/build/test-results/testPlayDebugUnitTest/*.xml,mobile/build/test-results/testDebugUnitTest/*.xml,companion-protocol/build/test-results/test/*.xml
+          files: wear/build/test-results/testPlayDebugUnitTest/*.xml,mobile/build/test-results/testDebugUnitTest/*.xml,companion-protocol/build/test-results/test/*.xml,clockify-api/build/test-results/test/*.xml
       - name: Upload Test Reports on Failure
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -101,3 +102,4 @@ jobs:
             wear/build/reports/tests/
             mobile/build/reports/tests/
             companion-protocol/build/reports/tests/
+            clockify-api/build/reports/tests/

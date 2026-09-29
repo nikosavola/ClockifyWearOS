@@ -46,6 +46,7 @@ sonar {
           // Plain Kotlin/JVM module (no Android variants), so its Kover task/report path drops
           // the "Debug" suffix the two Android modules' variant-scoped ones have.
           file("companion-protocol/build/reports/kover/report.xml"),
+          file("clockify-api/build/reports/kover/report.xml"),
         )
         .joinToString(",") { it.absolutePath },
     )
@@ -116,6 +117,9 @@ tasks.register("formatAll") {
     ":companion-protocol:ktfmtFormatScripts",
     ":companion-protocol:ktfmtFormatKotlin",
     ":companion-protocol:ktlintFormat",
+    ":clockify-api:ktfmtFormatScripts",
+    ":clockify-api:ktfmtFormatKotlin",
+    ":clockify-api:ktlintFormat",
     ":mobile:ktfmtFormatScripts",
     ":mobile:ktfmtFormatKotlin",
     ":mobile:ktlintFormat",
@@ -134,13 +138,18 @@ tasks.register("lintAll") {
     ":wear:detekt",
     ":wear:lintPlayDebug",
     ":wear:lintFdroidDebug",
-    // No :companion-protocol:lintDebug - it's a plain Kotlin/JVM module, not an Android one, so
-    // there's no Android Lint task for it at all.
+    // No :companion-protocol:lintDebug or :clockify-api:lintDebug - both are plain Kotlin/JVM
+    // modules, not Android ones, so there's no Android Lint task for either at all.
     ":companion-protocol:ktfmtCheckScripts",
     ":companion-protocol:ktfmtSourcesNotEmpty",
     ":companion-protocol:ktfmtCheckKotlin",
     ":companion-protocol:ktlintCheck",
     ":companion-protocol:detekt",
+    ":clockify-api:ktfmtCheckScripts",
+    ":clockify-api:ktfmtSourcesNotEmpty",
+    ":clockify-api:ktfmtCheckKotlin",
+    ":clockify-api:ktlintCheck",
+    ":clockify-api:detekt",
     ":mobile:ktfmtCheckScripts",
     ":mobile:ktfmtSourcesNotEmpty",
     ":mobile:ktfmtCheckKotlin",

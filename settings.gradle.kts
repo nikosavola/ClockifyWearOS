@@ -33,4 +33,6 @@ include(":wear")
 
 include(":companion-protocol")
 
+include(":clockify-api")
+
 include(":mobile")
