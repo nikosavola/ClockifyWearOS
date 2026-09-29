@@ -115,6 +115,38 @@ class ClockifyApiTest {
   }
 
   @Test
+  fun `getProjects with no filters sends only the path`() {
+    runTest {
+      server.enqueue(MockResponse().setBody("[]"))
+
+      api.getProjects(WORKSPACE_ID)
+
+      val url = server.takeRequest().requestUrl!!
+      assertEquals("/workspaces/$WORKSPACE_ID/projects", url.encodedPath)
+      // Defaults are null, not false/absent-meaning-something-else: Retrofit omits null @Query
+      // values entirely, so the server sees an unfiltered request rather than archived=false.
+      assertNull(url.queryParameter("archived"))
+      assertNull(url.queryParameter("page"))
+      assertNull(url.queryParameter("page-size"))
+    }
+  }
+
+  @Test
+  fun `getProjectTasks with no filters omits the active and paging filters`() {
+    runTest {
+      server.enqueue(MockResponse().setBody("[]"))
+
+      api.getProjectTasks(WORKSPACE_ID, PROJECT_ID)
+
+      val url = server.takeRequest().requestUrl!!
+      assertEquals("/workspaces/$WORKSPACE_ID/projects/$PROJECT_ID/tasks", url.encodedPath)
+      assertNull(url.queryParameter("is-active"))
+      assertNull(url.queryParameter("page"))
+      assertNull(url.queryParameter("page-size"))
+    }
+  }
+
+  @Test
   fun `startTimeEntry posts to time-entries with the request body`() {
     runTest {
       val entryId = "5f8a1b2c3d4e5f6a7b8c9d40"
@@ -208,6 +240,29 @@ class ClockifyApiTest {
       val url = server.takeRequest().requestUrl!!
       assertEquals("10", url.queryParameter("page-size"))
       assertNull(url.queryParameter("in-progress"))
+    }
+  }
+
+  @Test
+  fun `getTimeEntries sends the date range and paging the summary screen asks for`() {
+    runTest {
+      server.enqueue(MockResponse().setBody("[]"))
+
+      api.getTimeEntries(
+        WORKSPACE_ID,
+        USER_ID,
+        start = "2024-06-01T00:00:00Z",
+        end = "2024-06-30T23:59:59Z",
+        page = 2,
+        pageSize = 50,
+      )
+
+      val url = server.takeRequest().requestUrl!!
+      assertEquals("/workspaces/$WORKSPACE_ID/user/$USER_ID/time-entries", url.encodedPath)
+      assertEquals("2024-06-01T00:00:00Z", url.queryParameter("start"))
+      assertEquals("2024-06-30T23:59:59Z", url.queryParameter("end"))
+      assertEquals("2", url.queryParameter("page"))
+      assertEquals("50", url.queryParameter("page-size"))
     }
   }
 

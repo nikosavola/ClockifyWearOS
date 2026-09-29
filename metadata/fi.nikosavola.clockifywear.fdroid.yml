@@ -49,6 +49,24 @@ Builds:
     # scanned, not correctly excluding it because of flavor scoping. A real GMS-flagging APK
     # scan on F-Droid's own build server is the actual backstop for that dependency; this check
     # only reliably catches an unconditional, unquoted non-free dependency added elsewhere.
+    # clockify-api/build.gradle.kts declares a *publishing* repository (GitHub Packages, where that
+    # module's jar is uploaded at release time). fdroidserver's scanner checks every maven repo URL
+    # it finds in any *.gradle.kts against its own known-repos allowlist without distinguishing a
+    # publishing target from a dependency source, so it reports it as an "unknown maven repo". The
+    # app never resolves anything from it, and settings.gradle.kts's FAIL_ON_PROJECT_REPOS already
+    # bans project-level dependency repositories outright.
+    #
+    # scanignore rather than moving the URL out of the build file: the scanner's MAVEN_URL_REGEX
+    # captures whatever expression follows `url =`, so any indirection (a gradle.properties value,
+    # a helper function) is flagged too - it just changes the text of the error.
+    #
+    # This does blind the scanner to that one file, not to the module. Its dependencies are declared
+    # through version-catalog accessors (`libs.retrofit`), which the scanner's line-anchored regex
+    # cannot read in any file (see the note above), and F-Droid's own APK scan on its build server
+    # remains the backstop. Narrow on purpose: a bare `clockify-api` entry would also hide the
+    # module's sources.
+    scanignore:
+      - clockify-api/build.gradle.kts
     scandelete:
       - mobile
 AutoUpdateMode: Version

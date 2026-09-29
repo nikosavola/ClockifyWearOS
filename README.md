@@ -80,6 +80,28 @@ straight to Clockify's own API. The phone companion app never talks to Clockify 
 relays the key to the watch over the device-local Bluetooth Data Layer channel. Nothing is
 collected by this app's developer.
 
+## Published packages
+
+The Clockify REST client the watch app uses (`:clockify-api`) is also published standalone to GitHub Packages as `fi.nikosavola:clockify-api`, one version per release tag:
+
+```kotlin
+repositories {
+  maven {
+    url = uri("https://maven.pkg.github.com/nikosavola/ClockifyWearOS")
+    credentials {
+      // Classic PAT with read:packages. GitHub Packages rejects anonymous reads even of a public
+      // package, and doesn't accept fine-grained tokens at all.
+      username = System.getenv("GITHUB_ACTOR")
+      password = System.getenv("GITHUB_TOKEN")
+    }
+  }
+}
+
+dependencies { implementation("fi.nikosavola:clockify-api:0.1.3") }
+```
+
+Publishing runs from [.github/workflows/publish.yml](.github/workflows/publish.yml) on a `v*` tag. The `:companion-protocol` module is deliberately not published: it is the wire contract between this repository's own phone and watch apps, so nothing outside it can consume the module usefully.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup (via [`just`](https://just.systems/))

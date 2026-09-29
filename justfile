@@ -73,12 +73,18 @@ test-mobile:
 test-protocol:
     {{ gradle }} :companion-protocol:test
 
+# Run the host-JVM unit tests (published Clockify API client module)
+[group('test')]
+test-api:
+    {{ gradle }} :clockify-api:test
+
 # Full local gate: lint, build and test all modules (both :wear flavors), matching CI exactly
 [group('test')]
 verify:
     {{ gradle }} lintAll :wear:assemblePlayDebug :wear:testPlayDebugUnitTest \
         :wear:assembleFdroidDebug :wear:testFdroidDebugUnitTest \
-        :mobile:assembleDebug :mobile:testDebugUnitTest :companion-protocol:test --no-daemon
+        :mobile:assembleDebug :mobile:testDebugUnitTest :companion-protocol:test \
+        :clockify-api:test --no-daemon
 
 # List connected adb devices, including wireless ones
 [group('device')]
