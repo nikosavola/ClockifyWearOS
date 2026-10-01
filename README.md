@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/nikosavola/ClockifyWearOS/graph/badge.svg)](https://codecov.io/gh/nikosavola/ClockifyWearOS)
 [![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=nikosavola_ClockifyWearOS&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=nikosavola_ClockifyWearOS)
 [![License: Apache 2.0](https://img.shields.io/github/license/nikosavola/ClockifyWearOS)](LICENSE)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fnikosavola%2FClockifyWearOS.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fnikosavola%2FClockifyWearOS?ref=badge_shield)
 
 ---
 
@@ -116,3 +117,6 @@ so a 0.y bump can carry breaking changes.
 ## License
 
 [Apache License 2.0](LICENSE).
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fnikosavola%2FClockifyWearOS.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fnikosavola%2FClockifyWearOS?ref=badge_large)
