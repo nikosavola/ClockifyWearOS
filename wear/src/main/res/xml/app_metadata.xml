@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Describes this app's AppFunctions to an agent as a whole. Per-function descriptions come from the
+  KDoc on the annotated functions, not from here.
+-->
+<AppFunctionAppMetadata
+    xmlns:appfn="http://schemas.android.com/apk/androidx.appfunctions"
+    appfn:description="Answers questions about the user's Clockify time tracking on the watch: whether a timer is running and for how long, which projects exist to track against, and what was tracked most recently.
+Constraints:
+  - Read-only. No function here starts, stops, or edits anything, so a request to start tracking time cannot be fulfilled by this app yet." />
