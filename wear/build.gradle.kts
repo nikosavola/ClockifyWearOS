@@ -8,6 +8,9 @@ plugins {
   alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.play.publisher)
   alias(libs.plugins.kover)
+  // Runs the appfunctions compiler (KSP, not kapt). Only generates the schema XML the OS indexes
+  // plus the concrete AppFunctionService; nothing else here uses an annotation processor.
+  alias(libs.plugins.ksp)
 }
 
 // Release signing: a local gitignored keystore.properties file takes priority (for a developer
@@ -53,7 +56,10 @@ val hasReleaseSigningConfig = releaseSigningPresentCount == 4
 
 android {
   namespace = "fi.nikosavola.clockifywear"
-  compileSdk = 36
+  // 37, not 36: androidx.appfunctions:appfunctions declares a minCompileSdk of 37, so compiling
+  // against 36 fails AAR metadata checks. compileSdk is independent of targetSdk (still 36) - this
+  // only allows newer APIs to be referenced, it does not opt the app into new runtime behaviour.
+  compileSdk = 37
 
   defaultConfig {
     applicationId = "fi.nikosavola.clockifywear"
@@ -162,6 +168,11 @@ dependencies {
   implementation(project(":clockify-api"))
 
   implementation(libs.androidx.datastore.preferences)
+
+  // AppFunctions (Android's on-device MCP equivalent). Shared, not play-only: it is an androidx
+  // plus platform API with no Google Play Services in it, so the fdroid flavor stays clean.
+  implementation(libs.androidx.appfunctions)
+  ksp(libs.androidx.appfunctions.compiler)
 
   // Receives the sign-in request pushed by the phone companion app; see companion/. Play-only:
   // the fdroid flavor has no Google Play Services and no companion pairing feature at all.
