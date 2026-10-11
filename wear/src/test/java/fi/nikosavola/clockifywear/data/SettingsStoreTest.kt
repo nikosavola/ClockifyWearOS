@@ -3,6 +3,7 @@ package fi.nikosavola.clockifywear.data
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -113,6 +114,61 @@ class SettingsStoreTest {
 
     assertNotEquals("secret-key", raw)
     assertEquals("secret-key", FakeApiKeyCipher().decrypt(raw!!))
+  }
+
+  @Test
+  fun `reading settings twice decrypts the key only once`() = runTest {
+    val cipher = FakeApiKeyCipher()
+    val store = SettingsStore(dataStore, cipher)
+    store.setApiKey("key-1")
+
+    store.currentSettings()
+    store.currentSettings()
+
+    assertEquals(1, cipher.decryptCount)
+  }
+
+  @Test
+  fun `a changed key is decrypted again rather than served from the cache`() = runTest {
+    val cipher = FakeApiKeyCipher()
+    val store = SettingsStore(dataStore, cipher)
+    store.setApiKey("key-1")
+    assertEquals("key-1", store.currentSettings().apiKey)
+
+    store.setApiKey("key-2")
+
+    assertEquals("key-2", store.currentSettings().apiKey)
+    assertEquals(2, cipher.decryptCount)
+  }
+
+  @Test
+  fun `a decrypt that fails is retried on the next read rather than cached`() = runTest {
+    val cipher = FakeApiKeyCipher()
+    val store = SettingsStore(dataStore, cipher)
+    // A stored value the cipher rejects: what a corrupt record or a wiped keystore looks like.
+    dataStore.edit { it[stringPreferencesKey("api_key")] = "not-encrypted-by-this-cipher" }
+
+    assertNull(store.currentSettings().apiKey)
+    assertNull(store.currentSettings().apiKey)
+
+    assertEquals(2, cipher.decryptCount)
+  }
+
+  // Signing out has to drop the decrypted key along with the stored one: the cache is keyed on the
+  // ciphertext, so a key that encrypts to the same bytes would otherwise be served straight back
+  // from memory without the cipher ever seeing it again.
+  @Test
+  fun `clear makes the next read decrypt the key again`() = runTest {
+    val cipher = FakeApiKeyCipher()
+    val store = SettingsStore(dataStore, cipher)
+    store.setApiKey("key-1")
+    assertEquals("key-1", store.currentSettings().apiKey)
+
+    store.clear()
+    store.setApiKey("key-1")
+
+    assertEquals("key-1", store.currentSettings().apiKey)
+    assertEquals(2, cipher.decryptCount)
   }
 
   @Test
