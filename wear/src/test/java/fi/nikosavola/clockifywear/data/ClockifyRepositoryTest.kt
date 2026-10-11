@@ -13,7 +13,9 @@ import fi.nikosavola.clockifywear.data.api.dto.UserDto
 import fi.nikosavola.clockifywear.data.api.dto.WorkspaceDto
 import java.io.File
 import java.time.Instant
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -69,6 +71,18 @@ private fun timeEntryJson(id: String, start: String = "2026-07-31T09:00:00Z"): S
 
 private fun timeEntriesPageJson(count: Int, prefix: String): String =
   (0 until count).joinToString(prefix = "[", postfix = "]") { i -> timeEntryJson("$prefix$i") }
+
+// Runs what is dispatched to it inline, counting the dispatches: a test can then assert that the
+// project cache's file access went through the injected dispatcher rather than the caller's.
+private class CountingDispatcher : CoroutineDispatcher() {
+  var dispatches = 0
+    private set
+
+  override fun dispatch(context: CoroutineContext, block: Runnable) {
+    dispatches++
+    block.run()
+  }
+}
 
 @RunWith(RobolectricTestRunner::class)
 class ClockifyRepositoryTest {
@@ -265,6 +279,33 @@ class ClockifyRepositoryTest {
     assertTrue(result is ClockifyResult.Success)
     assertEquals("cached", (result as ClockifyResult.Success).value.single().id)
     assertEquals(0, server.requestCount)
+  }
+
+  // Counted rather than flagged: the point is which call sites switch dispatcher, and one cache hit
+  // means one access while a refill means two.
+  @Test
+  fun `projects dispatches the cache read off the caller's thread`() = runTest {
+    primeIdentity()
+    projectCache.write(listOf(ProjectDto(id = "cached", name = "Cached")))
+    val dispatcher = CountingDispatcher()
+    val repository = ClockifyRepository(api, settingsStore, projectCache, dispatcher) { now }
+
+    repository.projects()
+
+    assertEquals(1, dispatcher.dispatches)
+    assertEquals(0, server.requestCount)
+  }
+
+  @Test
+  fun `projects dispatches the cache refill off the caller's thread too`() = runTest {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody(projectsPageJson(1, "n")))
+    val dispatcher = CountingDispatcher()
+    val repository = ClockifyRepository(api, settingsStore, projectCache, dispatcher) { now }
+
+    repository.projects()
+
+    assertEquals(2, dispatcher.dispatches)
   }
 
   @Test
