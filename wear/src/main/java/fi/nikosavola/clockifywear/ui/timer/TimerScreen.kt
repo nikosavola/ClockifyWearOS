@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -72,6 +73,7 @@ import fi.nikosavola.clockifywear.ui.ErrorContent
 import fi.nikosavola.clockifywear.ui.projects.ProjectColorDot
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 private val PROJECT_LABEL_ROW_GAP = 4.dp
@@ -195,7 +197,7 @@ fun TimerScreen(
       }
     }
     if (state is TimerUiState.Running) {
-      ElapsedTimeOverlay(state)
+      ElapsedTimeOverlay(elapsedSeconds = viewModel.elapsedSeconds, description = state.description)
     }
   }
 }
@@ -203,24 +205,43 @@ fun TimerScreen(
 // See TimerScreen's outer Box comment for why this lives at the screen level, aligned within that
 // full-screen Box, instead of inside RunningContent/ScreenScaffold's own content slot.
 @Composable
-private fun BoxScope.ElapsedTimeOverlay(state: TimerUiState.Running) {
-  Text(
-    text = formatElapsed(state.elapsedSeconds),
+private fun BoxScope.ElapsedTimeOverlay(elapsedSeconds: StateFlow<Long>, description: String?) {
+  ElapsedTimeText(
+    elapsedSeconds = elapsedSeconds,
     modifier = Modifier.fillMaxWidth().align(Alignment.Center),
-    style =
-      MaterialTheme.typography.numeralLarge.copy(
-        fontFeatureSettings = "tnum",
-        fontFamily = FontFamily.Monospace,
-      ),
-    textAlign = TextAlign.Center,
   )
-  if (!state.description.isNullOrBlank()) {
+  if (!description.isNullOrBlank()) {
     Text(
-      text = state.description,
+      text = description,
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
       modifier = Modifier.align(Alignment.BottomCenter),
     )
+  }
+}
+
+// Takes the flow rather than a collected value, and collects it here rather than one level up in
+// ElapsedTimeOverlay: this is the only thing on the screen that changes every second, so a read any
+// higher would recompose everything below it once a second, down to the description beside this
+// text, and the scaffold and lazy list above it.
+@Composable
+private fun ElapsedTimeText(elapsedSeconds: StateFlow<Long>, modifier: Modifier = Modifier) {
+  val seconds by elapsedSeconds.collectAsStateWithLifecycle()
+  Text(
+    text = formatElapsed(seconds),
+    modifier = modifier,
+    style = elapsedTextStyle(),
+    textAlign = TextAlign.Center,
+  )
+}
+
+// Remembered rather than copied inline: a fresh TextStyle per tick is an allocation per second for
+// a value that only changes with the theme, and it also defeats Text's own skipping.
+@Composable
+private fun elapsedTextStyle(): TextStyle {
+  val numeralLarge = MaterialTheme.typography.numeralLarge
+  return remember(numeralLarge) {
+    numeralLarge.copy(fontFeatureSettings = "tnum", fontFamily = FontFamily.Monospace)
   }
 }
 

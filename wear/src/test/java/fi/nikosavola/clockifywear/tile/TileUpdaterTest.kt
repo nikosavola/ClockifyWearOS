@@ -36,7 +36,6 @@ class TileUpdaterTest {
       projectName = "Website",
       projectColor = null,
       startInstant = Instant.parse("2026-07-31T09:00:00Z"),
-      elapsedSeconds = 0,
       description = null,
     )
 
