@@ -11,9 +11,12 @@ import fi.nikosavola.clockifywear.data.api.dto.WorkspaceDto
 import java.io.IOException
 import java.time.Instant
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
 
@@ -52,6 +55,10 @@ private const val HTTP_NOT_FOUND = 404
  * @param api the Retrofit client used for every network call.
  * @param settingsStore persisted identity (workspaceId, userId) and the api key.
  * @param projectCache on-disk cache backing [projects].
+ * @param ioDispatcher where [projectCache]'s file access runs. Its callers are ViewModels on
+ *   `Dispatchers.Main.immediate`, and decoding the cached project list there blocks the main
+ *   thread. Declared before [clock] so `clock` stays the trailing-lambda parameter at existing call
+ *   sites.
  * @param clock injectable so timer start/stop timestamps are testable without depending on the real
  *   wall clock.
  */
@@ -59,6 +66,7 @@ class ClockifyRepository(
   private val api: ClockifyApi,
   private val settingsStore: SettingsStore,
   private val projectCache: ProjectCache,
+  private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
   private val clock: () -> Instant = Instant::now,
 ) {
   private val mutableRunningEntry = MutableStateFlow<TimeEntryDto?>(null)
@@ -95,7 +103,7 @@ class ClockifyRepository(
    */
   suspend fun projects(forceRefresh: Boolean = false): ClockifyResult<List<ProjectDto>> {
     if (!forceRefresh) {
-      val cached = projectCache.read()
+      val cached = withContext(ioDispatcher) { projectCache.read() }
       if (cached != null && !projectCache.isStale(cached)) {
         return ClockifyResult.Success(cached.projects)
       }
@@ -319,7 +327,7 @@ class ClockifyRepository(
       }
     }
     val nonArchived = fetched.filterNot { it.archived }
-    projectCache.write(nonArchived)
+    withContext(ioDispatcher) { projectCache.write(nonArchived) }
     return ClockifyResult.Success(nonArchived)
   }
 

@@ -42,7 +42,6 @@ class OngoingTimerNotifierTest {
       projectName = projectName,
       projectColor = null,
       startInstant = startInstant,
-      elapsedSeconds = 0,
       description = null,
     )
 
