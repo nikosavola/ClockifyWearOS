@@ -86,6 +86,22 @@ verify:
         :mobile:assembleDebug :mobile:testDebugUnitTest :companion-protocol:test \
         :clockify-api:test --no-daemon
 
+# Re-render the README screenshots from the app's own composables (ScreenScreenshotsTest)
+#
+# --rerun is load-bearing, not belt-and-braces: the rm below deletes a directory Gradle has no idea
+# the test writes to, so without it a second run is UP-TO-DATE, renders nothing, and the copy has
+# nothing to copy. The two timer images are deliberately excluded from the copy: those are captures
+# from a watch, with a real round mask and device fonts, which is what the README says they are. The
+# two tile images are not rendered at all - a Tile is protolayout built for the system's renderer,
+# so there is nothing to rasterise off-device.
+[group('test')]
+screenshots:
+    rm -rf wear/build/screenshots
+    {{ gradle }} :wear:testPlayDebugUnitTest \
+        --tests 'fi.nikosavola.clockifywear.ui.ScreenScreenshotsTest' --rerun
+    rm -f wear/build/screenshots/timer_idle.png wear/build/screenshots/timer_running.png
+    cp wear/build/screenshots/*.png docs/screenshots/
+
 # List connected adb devices, including wireless ones
 [group('device')]
 devices:
