@@ -29,4 +29,10 @@ sealed interface ClockifyError {
 
   /** The operation needs a signed-in user (workspaceId/userId) but none is persisted yet. */
   data object NotSignedIn : ClockifyError
+
+  /**
+   * Sign-in could not persist the key. It is encrypted through the watch's keystore before it is
+   * stored, so an unavailable or unreadable keystore fails here rather than at the network.
+   */
+  data object KeyNotStored : ClockifyError
 }

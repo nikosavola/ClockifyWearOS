@@ -1,6 +1,8 @@
 package fi.nikosavola.clockifywear.data
 
 import android.util.Base64
+import java.io.IOException
+import java.security.ProviderException
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,6 +44,23 @@ class AndroidKeystoreApiKeyCipherTest {
     val wellFormed = Base64.encodeToString(ByteArray(WELL_FORMED_PAYLOAD_BYTES), Base64.NO_WRAP)
 
     assertNull(cipher.decrypt(wellFormed))
+  }
+
+  // Every way the Keystore itself can fail, which must all read as "no key" rather than escape: a
+  // keystore that cannot be read reports an I/O error, and the keystore daemon reports its failures
+  // as unchecked ones (ProviderException here, android.security.KeyStoreException on a device).
+  // These used to escape decrypt and every caller of it, including the repository calls whose whole
+  // design is to report being signed out as a value.
+  @Test
+  fun `decrypt returns null for every kind of keystore failure`() {
+    val wellFormed = Base64.encodeToString(ByteArray(WELL_FORMED_PAYLOAD_BYTES), Base64.NO_WRAP)
+    val failures = listOf(IOException("keystore unavailable"), ProviderException("daemon error"))
+
+    for (failure in failures) {
+      val cipher = AndroidKeystoreApiKeyCipher(keyProvider = { throw failure })
+
+      assertNull("threw for ${failure::class.simpleName}", cipher.decrypt(wellFormed))
+    }
   }
 }
 

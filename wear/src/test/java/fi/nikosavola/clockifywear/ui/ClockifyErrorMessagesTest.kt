@@ -19,6 +19,7 @@ class ClockifyErrorMessagesTest {
     assertEquals(R.string.error_parse, errorMessageRes(ClockifyError.ParseError))
     assertEquals(R.string.error_no_workspace, errorMessageRes(ClockifyError.NoWorkspaceFound))
     assertEquals(R.string.error_not_signed_in, errorMessageRes(ClockifyError.NotSignedIn))
+    assertEquals(R.string.error_key_not_stored, errorMessageRes(ClockifyError.KeyNotStored))
   }
 
   @Test
@@ -34,5 +35,7 @@ class ClockifyErrorMessagesTest {
     assertFalse(requiresSignIn(ClockifyError.Http(500)))
     assertFalse(requiresSignIn(ClockifyError.ParseError))
     assertFalse(requiresSignIn(ClockifyError.NoWorkspaceFound))
+    // Retryable, not a routing error: the user is already on Settings when a key fails to store.
+    assertFalse(requiresSignIn(ClockifyError.KeyNotStored))
   }
 }

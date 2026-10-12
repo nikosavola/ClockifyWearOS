@@ -73,8 +73,12 @@ class ApiKeyMessageResolverTest {
     )
   }
 
+  // KeyNotStored is the one deliberate overlap with UNKNOWN, not a missing code: the failure is
+  // about the watch's own keystore, so the phone can do nothing beyond retrying, and it is not
+  // worth
+  // a protocol enum addition. Everything the phone can distinguish gets a code of its own.
   @Test
-  fun `every ClockifyError maps to a distinct error code`() {
+  fun `the errors the phone can distinguish each map to a code of their own`() {
     val errors =
       listOf(
         ClockifyError.Unauthorized,
@@ -89,6 +93,10 @@ class ApiKeyMessageResolverTest {
     val codes = errors.map { it.toCompanionErrorCode() }
 
     assertEquals(codes.distinct(), codes)
+    assertEquals(
+      CompanionSignInErrorCode.UNKNOWN,
+      ClockifyError.KeyNotStored.toCompanionErrorCode(),
+    )
   }
 
   @Test

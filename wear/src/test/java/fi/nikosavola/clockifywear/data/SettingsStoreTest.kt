@@ -5,10 +5,14 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
@@ -169,6 +173,55 @@ class SettingsStoreTest {
 
     assertEquals("key-1", store.currentSettings().apiKey)
     assertEquals(2, cipher.decryptCount)
+  }
+
+  // The store can fail where the cipher did not, so the mirror has to stay untouched for that half
+  // too: apiKeySupplier hands whatever is in it straight to the next request.
+  @Test
+  fun `a key the store could not write is not left in the mirror`() = runBlocking {
+    val blocked = tempFolder.newFile("blocked")
+    val store =
+      SettingsStore(
+        PreferenceDataStoreFactory.create(
+          produceFile = { File(blocked, "settings.preferences_pb") }
+        ),
+        FakeApiKeyCipher(),
+      )
+
+    val failure = runCatching { store.setApiKey("key-1") }.exceptionOrNull()
+
+    assertNotNull("the store should have rejected this write", failure)
+    assertNull(store.apiKeySupplier())
+  }
+
+  // A re-key that cannot be stored leaves the account that was already signed in alone, on the key
+  // it was using: locking a working watch out of itself over one failed write would be worse than
+  // the error the caller reports.
+  @Test
+  fun `a re-key that cannot be stored keeps the key that was already working`() = runTest {
+    var failNextEncrypt = false
+    val real = FakeApiKeyCipher()
+    val store =
+      SettingsStore(
+        dataStore,
+        object : ApiKeyCipher {
+          override fun encrypt(plaintext: String): String {
+            if (failNextEncrypt) throw IOException("keystore unavailable")
+            return real.encrypt(plaintext)
+          }
+
+          override fun decrypt(ciphertext: String): String? = real.decrypt(ciphertext)
+        },
+      )
+    store.setApiKey("old-key")
+    assertEquals("old-key", store.apiKeySupplier())
+
+    failNextEncrypt = true
+    val failure = runCatching { store.setApiKey("new-key") }.exceptionOrNull()
+
+    assertNotNull("the keystore should have rejected this write", failure)
+    assertEquals("old-key", store.apiKeySupplier())
+    assertEquals("old-key", store.currentSettings().apiKey)
   }
 
   @Test
