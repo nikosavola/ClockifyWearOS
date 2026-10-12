@@ -16,6 +16,28 @@ Installs the pre-commit hooks so format/lint run on every commit.
 just test
 ```
 
+`ScreenScreenshotsTest` renders each screen to a PNG as it runs, asserting that what came out has
+actual content in it rather than a blank frame. Those images land in `wear/build/screenshots`, and
+`just screenshots` copies them into `docs/screenshots` for the README.
+
+## Localization
+
+The watch app's existing strings are translated into nine languages; those translations stay. New
+user-facing strings ship in English only: an unreviewed machine translation is worse than no
+translation, and the nine locale files are a real cost for every string added.
+
+Add such a string to `wear/src/main/res/values/strings.xml` and to no other locale, and mark it so
+lint's `MissingTranslation` check does not fail the build:
+
+```xml
+<resources xmlns:tools="http://schemas.android.com/tools">
+  <string name="example" tools:ignore="MissingTranslation">Example</string>
+</resources>
+```
+
+`strings.xml` does not declare `xmlns:tools` yet, so the first string to need this adds it. Prefer
+an icon carrying a content description over a new label wherever one carries the meaning.
+
 ## Running linting & formatting
 
 ```bash

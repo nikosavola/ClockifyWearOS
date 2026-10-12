@@ -50,15 +50,19 @@ sonar {
         )
         .joinToString(",") { it.absolutePath },
     )
-    // ApiKeyMessageListenerService.kt is a thin WearableListenerService wrapper with 0% coverage
-    // on main already (same as this codebase's other thin service entry points, e.g.
-    // ClockifyTileService/ClockifyComplicationDataSourceService) - its actual logic is extracted
-    // into ApiKeyMessageDispatcher, which is fully tested. Moving it to wear/src/play/ for the
-    // play/fdroid flavor split makes SonarCloud treat its unchanged 0%-covered lines as "new" for
-    // this PR's new-code coverage gate, which would otherwise fail on a pure file move.
+    // The system entry points: a WearableListenerService, a TileService and a
+    // ComplicationDataSourceService. Each is only glue now - every decision lives in
+    // ApiKeyMessageDispatcher, TileContentBuilder or ComplicationContent, which the tests cover -
+    // and no test drives their framework callbacks, so their lines are excluded here rather than
+    // left as a permanent coverage dip on every PR.
     property(
       "sonar.coverage.exclusions",
-      "wear/src/play/java/fi/nikosavola/clockifywear/companion/ApiKeyMessageListenerService.kt",
+      listOf(
+          "wear/src/play/java/fi/nikosavola/clockifywear/companion/ApiKeyMessageListenerService.kt",
+          "wear/src/main/java/fi/nikosavola/clockifywear/tile/ClockifyTileService.kt",
+          "wear/src/main/java/fi/nikosavola/clockifywear/complication/ClockifyComplicationDataSourceService.kt",
+        )
+        .joinToString(","),
     )
   }
 }
