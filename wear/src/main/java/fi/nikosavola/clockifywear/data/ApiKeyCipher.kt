@@ -3,7 +3,6 @@ package fi.nikosavola.clockifywear.data
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-import java.security.GeneralSecurityException
 import java.security.KeyStore
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
@@ -21,8 +20,9 @@ interface ApiKeyCipher {
   fun encrypt(plaintext: String): String
 
   /**
-   * Null if [ciphertext] can't be decrypted: corrupted data, or a keystore wiped since it was
-   * written.
+   * Null if [ciphertext] can't be decrypted: corrupted data, a keystore wiped since it was written,
+   * or a keystore that cannot be reached at all. This is read on nearly every authenticated call,
+   * so each of those has to read as "no key" rather than as a failure of the caller.
    */
   fun decrypt(ciphertext: String): String?
 }
@@ -33,8 +33,14 @@ interface ApiKeyCipher {
  * direct Keystore use (AndroidX Security release notes, security-crypto 1.1.0-beta01), which is
  * exactly what this does; no new dependency needed.
  */
-class AndroidKeystoreApiKeyCipher : ApiKeyCipher {
-  private val secretKey: SecretKey by lazy { getOrCreateKey() }
+class AndroidKeystoreApiKeyCipher(
+  // Injectable so a test can make the Keystore itself fail, which nothing can reach off-device
+  // because the real provider is not registered under Robolectric. Null is the production default:
+  // the Keystore key, made on first use. Not a seam for the app to swap the key source - both
+  // production callers take the default.
+  private val keyProvider: (() -> SecretKey)? = null
+) : ApiKeyCipher {
+  private val secretKey: SecretKey by lazy { keyProvider?.invoke() ?: getOrCreateKey() }
 
   override fun encrypt(plaintext: String): String {
     val cipher = Cipher.getInstance(TRANSFORMATION).apply { init(Cipher.ENCRYPT_MODE, secretKey) }
@@ -62,7 +68,15 @@ class AndroidKeystoreApiKeyCipher : ApiKeyCipher {
               init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv))
             }
           String(cipher.doFinal(encrypted), Charsets.UTF_8)
-        } catch (e: GeneralSecurityException) {
+        } catch (_: Exception) {
+          // Every way the Keystore fails has to come back as "no key" rather than a throw: a bad
+          // GCM tag or a wiped keystore reports a GeneralSecurityException, an unreadable one an
+          // IOException, and the keystore daemon reports its own runtime failures
+          // (ProviderException, or android.security.KeyStoreException on a device). This decrypt
+          // runs on nearly every authenticated call, so a throw out of here takes down callers
+          // whose whole design is to report being signed out as a value. Catching this broadly is
+          // safe here because the method is not suspend: there is no CancellationException in it
+          // to swallow.
           null
         }
       }

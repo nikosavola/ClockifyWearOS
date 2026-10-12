@@ -99,8 +99,13 @@ class SettingsStore(
   suspend fun currentSettings(): Settings = settings.first()
 
   suspend fun setApiKey(apiKey: String?) {
-    cachedApiKey = apiKey
+    // Both halves can fail - encrypting through the keystore, and the store write itself - so the
+    // mirror the request path reads is updated only once the key is actually persisted. Updating it
+    // any earlier leaves apiKeySupplier handing out a key that exists nowhere on disk, which is
+    // what
+    // the next authenticated request would carry.
     setOrRemove(apiKeyKey, apiKey?.let(apiKeyCipher::encrypt))
+    cachedApiKey = apiKey
   }
 
   suspend fun setUserId(userId: String?) = setOrRemove(userIdKey, userId)

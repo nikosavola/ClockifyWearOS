@@ -76,7 +76,19 @@ class ClockifyRepository(
 
   /** Validates [apiKey] via `GET /user`, then resolves and persists the workspace to use. */
   suspend fun signIn(apiKey: String): ClockifyResult<UserDto> {
-    settingsStore.setApiKey(apiKey)
+    try {
+      settingsStore.setApiKey(apiKey)
+    } catch (cancellation: CancellationException) {
+      throw cancellation
+    } catch (_: Exception) {
+      // The key is encrypted through the watch's keystore before it is stored, so storing it can
+      // fail the way reading it can. Reported instead of thrown because it is the first thing
+      // sign-in does: a throw from here reaches no failure handler, leaving the UI on "signing in"
+      // with no way out. This call persisted nothing: a first sign-in stays signed out, and a
+      // re-key
+      // leaves the account already signed in on its existing key.
+      return ClockifyResult.Failure(ClockifyError.KeyNotStored)
+    }
     val result =
       when (val userResult = runCatchingClockify { api.getCurrentUser() }) {
         is ClockifyResult.Failure -> {

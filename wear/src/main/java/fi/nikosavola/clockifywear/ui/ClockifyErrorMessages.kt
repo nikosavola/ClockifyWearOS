@@ -17,6 +17,7 @@ fun errorMessageRes(error: ClockifyError): Int =
     is ClockifyError.ParseError -> R.string.error_parse
     is ClockifyError.NoWorkspaceFound -> R.string.error_no_workspace
     is ClockifyError.NotSignedIn -> R.string.error_not_signed_in
+    is ClockifyError.KeyNotStored -> R.string.error_key_not_stored
   }
 
 /**

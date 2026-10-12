@@ -12,6 +12,7 @@ import fi.nikosavola.clockifywear.data.api.dto.TimeEntryDto
 import fi.nikosavola.clockifywear.data.api.dto.UserDto
 import fi.nikosavola.clockifywear.data.api.dto.WorkspaceDto
 import java.io.File
+import java.io.IOException
 import java.time.Instant
 import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
@@ -122,6 +123,31 @@ class ClockifyRepositoryTest {
   }
 
   // --- signIn ---------------------------------------------------------------------------------
+
+  // Storing the key encrypts it through the watch's keystore first, so an unavailable keystore
+  // fails sign-in at its first step. That has to come back as a failure like any other, not as a
+  // throw: nothing catches a throw from here, so the UI would sit on "signing in" forever.
+  @Test
+  fun `signIn reports a failure instead of throwing when the key cannot be stored`() = runTest {
+    val unreadableKeystore =
+      SettingsStore(
+        PreferenceDataStoreFactory.create(
+          produceFile = { tempFolder.newFile("unreadable-keystore.preferences_pb") }
+        ),
+        AndroidKeystoreApiKeyCipher(keyProvider = { throw IOException("keystore unavailable") }),
+      )
+    val repository = ClockifyRepository(api, unreadableKeystore, projectCache) { now }
+
+    val result = repository.signIn(API_KEY)
+
+    assertEquals(ClockifyResult.Failure(ClockifyError.KeyNotStored), result)
+    // Read before currentSettings(), which re-primes this mirror from what is on disk and would
+    // make the assertion below pass no matter what setApiKey did with it.
+    assertNull(unreadableKeystore.apiKeySupplier())
+    // Nothing persisted either way: a key that could not be encrypted must not be stored in the
+    // clear, and sign-in did not get as far as validating it.
+    assertNull(unreadableKeystore.currentSettings().apiKey)
+  }
 
   @Test
   fun `signIn persists userId and the active workspace on success`() = runTest {
