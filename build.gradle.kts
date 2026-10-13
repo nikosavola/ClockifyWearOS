@@ -22,6 +22,9 @@ plugins {
   alias(libs.plugins.ktfmt) apply false
   alias(libs.plugins.ktlint) apply false
   alias(libs.plugins.detekt) apply false
+  // Module-only (wear/build.gradle.kts): runs the appfunctions compiler, which generates the
+  // schema XML the OS indexes.
+  alias(libs.plugins.ksp) apply false
   alias(libs.plugins.sonarqube)
 }
 
