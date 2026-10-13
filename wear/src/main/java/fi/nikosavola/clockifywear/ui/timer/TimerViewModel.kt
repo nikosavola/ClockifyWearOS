@@ -54,6 +54,12 @@ class TimerViewModel(
     MutableStateFlow<TimerUiState>(TimerUiState.Idle(hasDefaultProject = false))
   val uiState: StateFlow<TimerUiState> = mutableUiState.asStateFlow()
 
+  // Separate from uiState for the same reason isRefreshing is: this changes every second while a
+  // timer runs, and anything that reads it recomposes. Kept out of TimerUiState.Running so the 1 s
+  // tick invalidates only the readout that shows it, not every reader of the timer's state.
+  private val mutableElapsedSeconds = MutableStateFlow(0L)
+  val elapsedSeconds: StateFlow<Long> = mutableElapsedSeconds.asStateFlow()
+
   // Separate from uiState: "a refresh is in flight" is orthogonal to which state is currently
   // showing (Idle/Running/Error all keep rendering while a background refresh reloads them).
   // Starts true so the refresh icon is already spinning on the very first frame, before
@@ -126,15 +132,15 @@ class TimerViewModel(
    * Meant to be launched from the screen's `repeatOnLifecycle(STARTED)` block so it is cancelled,
    * not merely idle, once the composition stops. Recomputes from
    * [TimerUiState.Running.startInstant] and [clock] each tick rather than incrementing a counter,
-   * so it can't drift. Tested with virtual time by launching it and calling `advanceTimeBy`, never
-   * real sleeps.
+   * so it can't drift. Writes [elapsedSeconds] only, never [uiState]: rewritten state here would
+   * recompose the whole screen once a second. Tested with virtual time by launching it and calling
+   * `advanceTimeBy`, never real sleeps.
    */
   suspend fun runElapsedTicker() {
     while (coroutineContext.isActive) {
       val current = mutableUiState.value
       if (current is TimerUiState.Running) {
-        mutableUiState.value =
-          current.copy(elapsedSeconds = Duration.between(current.startInstant, clock()).seconds)
+        mutableElapsedSeconds.value = Duration.between(current.startInstant, clock()).seconds
       }
       delay(TICK_INTERVAL_MS)
     }
@@ -154,7 +160,13 @@ class TimerViewModel(
   }
 
   private suspend fun applyEntry(entry: TimeEntryDto?) {
-    mutableUiState.value =
+    // The state is built first, suspending on the project lookup if there is one, and the elapsed
+    // value last: it is a clock reading, so computing it before a round trip would publish a value
+    // already stale by the time it is written. The two writes below then land back to back, with no
+    // suspension point between them, because a tick scheduled in a gap would recompute elapsed from
+    // the state still in place at that moment and overwrite the value written here, leaving the
+    // readout showing the previous entry's duration under the new entry's project name.
+    val newState =
       if (entry == null) {
         val hasDefault = settingsStore.currentSettings().defaultProjectId != null
         TimerUiState.Idle(hasDefaultProject = hasDefault)
@@ -165,11 +177,14 @@ class TimerViewModel(
           projectName = project?.name,
           projectColor = project?.color?.let(::parseProjectColor),
           startInstant = entry.timeInterval.start,
-          elapsedSeconds = Duration.between(entry.timeInterval.start, clock()).seconds,
           description = entry.description?.takeIf { it.isNotBlank() },
         )
       }
-    onRunningStateChanged(mutableUiState.value)
+    val elapsedSeconds =
+      entry?.let { Duration.between(it.timeInterval.start, clock()).seconds } ?: 0L
+    mutableElapsedSeconds.value = elapsedSeconds
+    mutableUiState.value = newState
+    onRunningStateChanged(newState)
   }
 
   // Cosmetic-only lookup: a failed or unresolved project must never turn an otherwise-successful

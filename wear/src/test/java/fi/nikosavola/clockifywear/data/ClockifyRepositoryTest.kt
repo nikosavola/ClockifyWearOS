@@ -12,8 +12,11 @@ import fi.nikosavola.clockifywear.data.api.dto.TimeEntryDto
 import fi.nikosavola.clockifywear.data.api.dto.UserDto
 import fi.nikosavola.clockifywear.data.api.dto.WorkspaceDto
 import java.io.File
+import java.io.IOException
 import java.time.Instant
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -70,6 +73,18 @@ private fun timeEntryJson(id: String, start: String = "2026-07-31T09:00:00Z"): S
 private fun timeEntriesPageJson(count: Int, prefix: String): String =
   (0 until count).joinToString(prefix = "[", postfix = "]") { i -> timeEntryJson("$prefix$i") }
 
+// Runs what is dispatched to it inline, counting the dispatches: a test can then assert that the
+// project cache's file access went through the injected dispatcher rather than the caller's.
+private class CountingDispatcher : CoroutineDispatcher() {
+  var dispatches = 0
+    private set
+
+  override fun dispatch(context: CoroutineContext, block: Runnable) {
+    dispatches++
+    block.run()
+  }
+}
+
 @RunWith(RobolectricTestRunner::class)
 class ClockifyRepositoryTest {
   @get:Rule val tempFolder = TemporaryFolder()
@@ -108,6 +123,31 @@ class ClockifyRepositoryTest {
   }
 
   // --- signIn ---------------------------------------------------------------------------------
+
+  // Storing the key encrypts it through the watch's keystore first, so an unavailable keystore
+  // fails sign-in at its first step. That has to come back as a failure like any other, not as a
+  // throw: nothing catches a throw from here, so the UI would sit on "signing in" forever.
+  @Test
+  fun `signIn reports a failure instead of throwing when the key cannot be stored`() = runTest {
+    val unreadableKeystore =
+      SettingsStore(
+        PreferenceDataStoreFactory.create(
+          produceFile = { tempFolder.newFile("unreadable-keystore.preferences_pb") }
+        ),
+        AndroidKeystoreApiKeyCipher(keyProvider = { throw IOException("keystore unavailable") }),
+      )
+    val repository = ClockifyRepository(api, unreadableKeystore, projectCache) { now }
+
+    val result = repository.signIn(API_KEY)
+
+    assertEquals(ClockifyResult.Failure(ClockifyError.KeyNotStored), result)
+    // Read before currentSettings(), which re-primes this mirror from what is on disk and would
+    // make the assertion below pass no matter what setApiKey did with it.
+    assertNull(unreadableKeystore.apiKeySupplier())
+    // Nothing persisted either way: a key that could not be encrypted must not be stored in the
+    // clear, and sign-in did not get as far as validating it.
+    assertNull(unreadableKeystore.currentSettings().apiKey)
+  }
 
   @Test
   fun `signIn persists userId and the active workspace on success`() = runTest {
@@ -265,6 +305,33 @@ class ClockifyRepositoryTest {
     assertTrue(result is ClockifyResult.Success)
     assertEquals("cached", (result as ClockifyResult.Success).value.single().id)
     assertEquals(0, server.requestCount)
+  }
+
+  // Counted rather than flagged: the point is which call sites switch dispatcher, and one cache hit
+  // means one access while a refill means two.
+  @Test
+  fun `projects dispatches the cache read off the caller's thread`() = runTest {
+    primeIdentity()
+    projectCache.write(listOf(ProjectDto(id = "cached", name = "Cached")))
+    val dispatcher = CountingDispatcher()
+    val repository = ClockifyRepository(api, settingsStore, projectCache, dispatcher) { now }
+
+    repository.projects()
+
+    assertEquals(1, dispatcher.dispatches)
+    assertEquals(0, server.requestCount)
+  }
+
+  @Test
+  fun `projects dispatches the cache refill off the caller's thread too`() = runTest {
+    primeIdentity()
+    server.enqueue(MockResponse().setBody(projectsPageJson(1, "n")))
+    val dispatcher = CountingDispatcher()
+    val repository = ClockifyRepository(api, settingsStore, projectCache, dispatcher) { now }
+
+    repository.projects()
+
+    assertEquals(2, dispatcher.dispatches)
   }
 
   @Test

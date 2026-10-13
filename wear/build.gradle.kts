@@ -56,9 +56,10 @@ val hasReleaseSigningConfig = releaseSigningPresentCount == 4
 
 android {
   namespace = "fi.nikosavola.clockifywear"
-  // 37, not 36: androidx.appfunctions:appfunctions declares a minCompileSdk of 37, so compiling
-  // against 36 fails AAR metadata checks. compileSdk is independent of targetSdk (still 36) - this
-  // only allows newer APIs to be referenced, it does not opt the app into new runtime behaviour.
+  // 37, not 36: androidx.appfunctions and Wear Compose 1.7.1 declare a minCompileSdk of 37, so
+  // compiling against 36 fails AAR metadata checks. compileSdk is independent of targetSdk (still
+  // 36) - this only allows newer APIs to be referenced, it does not opt the app into new runtime
+  // behaviour.
   compileSdk = 37
 
   defaultConfig {

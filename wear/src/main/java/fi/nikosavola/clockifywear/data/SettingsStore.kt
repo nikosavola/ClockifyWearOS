@@ -55,10 +55,14 @@ class SettingsStore(
   // `currentSettings()`, before issuing the first authenticated request so this cache is primed.
   @Volatile private var cachedApiKey: String? = null
 
+  // One immutable pair behind one volatile reference, so a reader can never see a ciphertext
+  // alongside some other ciphertext's plaintext. Only ever set from the flow below.
+  @Volatile private var lastDecrypted: Pair<String, String>? = null
+
   val settings: Flow<Settings> =
     dataStore.data.map { prefs ->
       Settings(
-          apiKey = prefs[apiKeyKey]?.let(apiKeyCipher::decrypt),
+          apiKey = prefs[apiKeyKey]?.let(::decryptOnce),
           userId = prefs[userIdKey],
           workspaceId = prefs[workspaceIdKey],
           defaultProjectId = prefs[defaultProjectIdKey],
@@ -72,11 +76,36 @@ class SettingsStore(
   /** Synchronous bridge for `createClockifyApi`'s `apiKey: () -> String?` parameter. */
   val apiKeySupplier: () -> String? = { cachedApiKey }
 
+  // Decrypting is an AES-GCM round trip through the Keystore, and this flow re-runs its map on
+  // every collection and on every preference change, while repository code reads it for workspaceId
+  // and userId on essentially every call. The key changes far less often than that, so cache the
+  // result against the ciphertext that produced it: a different ciphertext (a newly written key, a
+  // reset DataStore) just decrypts again.
+  //
+  // What this does change is the keystore wipe case. decrypt returning null is also how a wiped
+  // keystore surfaces, and a key already decrypted once in this process keeps being served
+  // until the app is next started, rather than dropping straight to signed out. Bounded by the
+  // process lifetime, and what is served is still the key the API expects.
+  private fun decryptOnce(ciphertext: String): String? {
+    val cached = lastDecrypted
+    if (cached != null && cached.first == ciphertext) return cached.second
+    val plaintext = apiKeyCipher.decrypt(ciphertext)
+    // Only a decrypt that produced a key takes the slot: that keeps the pair non-nullable, and a
+    // failed decrypt is the one case worth re-checking on every read.
+    if (plaintext != null) lastDecrypted = ciphertext to plaintext
+    return plaintext
+  }
+
   suspend fun currentSettings(): Settings = settings.first()
 
   suspend fun setApiKey(apiKey: String?) {
-    cachedApiKey = apiKey
+    // Both halves can fail - encrypting through the keystore, and the store write itself - so the
+    // mirror the request path reads is updated only once the key is actually persisted. Updating it
+    // any earlier leaves apiKeySupplier handing out a key that exists nowhere on disk, which is
+    // what
+    // the next authenticated request would carry.
     setOrRemove(apiKeyKey, apiKey?.let(apiKeyCipher::encrypt))
+    cachedApiKey = apiKey
   }
 
   suspend fun setUserId(userId: String?) = setOrRemove(userIdKey, userId)
@@ -95,6 +124,10 @@ class SettingsStore(
   /** Clears all persisted settings, e.g. on sign-out. */
   suspend fun clear() {
     cachedApiKey = null
+    lastDecrypted = null
+    // The decrypted pair goes with it: signing out must not leave the plaintext key sitting in
+    // memory, and the cache is keyed on the ciphertext, so a later key that happens to encrypt to
+    // the same bytes would otherwise be served from here instead of being decrypted.
     dataStore.edit { it.clear() }
   }
 

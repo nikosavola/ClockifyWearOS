@@ -16,4 +16,9 @@ fun ClockifyError.toCompanionErrorCode(): CompanionSignInErrorCode =
     is ClockifyError.ParseError -> CompanionSignInErrorCode.PARSE_ERROR
     is ClockifyError.NoWorkspaceFound -> CompanionSignInErrorCode.NO_WORKSPACE
     is ClockifyError.NotSignedIn -> CompanionSignInErrorCode.NOT_SIGNED_IN
+    // Deliberately the wire-compat fallback rather than a code of its own: this failure is about
+    // the watch's own keystore, the phone can do nothing about it beyond retrying, and giving it a
+    // code would mean a protocol enum addition plus a matching phone-side message. The precise
+    // message is the watch's own (see ClockifyErrorMessages), which is where this is actionable.
+    is ClockifyError.KeyNotStored -> CompanionSignInErrorCode.UNKNOWN
   }

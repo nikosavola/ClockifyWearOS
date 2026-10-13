@@ -5,9 +5,12 @@ import fi.nikosavola.clockifywear.data.ClockifyError
 import fi.nikosavola.clockifywear.data.ClockifyRepository
 import fi.nikosavola.clockifywear.data.ProjectCache
 import fi.nikosavola.clockifywear.data.SettingsStore
+import fi.nikosavola.clockifywear.data.api.ClockifyApi
 import fi.nikosavola.clockifywear.data.api.createClockifyApi
+import fi.nikosavola.clockifywear.data.api.dto.ProjectDto
 import fi.nikosavola.clockifywear.ui.projects.parseProjectColor
 import java.io.File
+import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +25,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -137,7 +141,7 @@ class TimerViewModelTest {
       val state = viewModel.uiState.value
       assertTrue(state is TimerUiState.Running)
       assertEquals(PROJECT_ID, (state as TimerUiState.Running).projectId)
-      assertEquals(90L, state.elapsedSeconds)
+      assertEquals(90L, viewModel.elapsedSeconds.value)
     }
 
   @Test
@@ -281,6 +285,7 @@ class TimerViewModelTest {
       viewModel.stop().join()
 
       assertTrue(viewModel.uiState.value is TimerUiState.Idle)
+      assertEquals(0L, viewModel.elapsedSeconds.value)
     }
 
   @Test
@@ -371,15 +376,117 @@ class TimerViewModelTest {
         )
 
       viewModel.onForeground().join()
-      assertEquals(0L, (viewModel.uiState.value as TimerUiState.Running).elapsedSeconds)
+      assertEquals(0L, viewModel.elapsedSeconds.value)
 
       val tickerJob = launch { viewModel.runElapsedTicker() }
       advanceTimeBy(2_500)
       runCurrent()
 
-      val running = viewModel.uiState.value as TimerUiState.Running
-      assertEquals(2L, running.elapsedSeconds)
+      assertEquals(2L, viewModel.elapsedSeconds.value)
       tickerJob.cancel()
+    }
+
+  // The whole point of keeping elapsed seconds out of TimerUiState: a state that changed every
+  // second would re-emit through the StateFlow this screen collects, and every reader of uiState
+  // (the scaffold, the list, the bezel button) recomposes when it does.
+  @Test
+  fun `a tick leaves uiState untouched so nothing reading it recomposes`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      val start = Instant.parse("2026-07-31T09:00:00Z")
+      server.enqueue(
+        MockResponse().setBody(runningEntryListJson("running", start = start.toString()))
+      )
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+      val viewModel =
+        TimerViewModel(
+          repository,
+          settingsStore,
+          clock = { start.plusMillis(testScheduler.currentTime) },
+        )
+      viewModel.onForeground().join()
+
+      val stateBefore = viewModel.uiState.value
+      val tickerJob = launch { viewModel.runElapsedTicker() }
+      advanceTimeBy(3_500)
+      runCurrent()
+
+      assertSame(stateBefore, viewModel.uiState.value)
+      assertEquals(3L, viewModel.elapsedSeconds.value)
+      tickerJob.cancel()
+    }
+
+  // Regression for the ordering inside applyEntry: it used to write elapsed before it computed the
+  // new state, and computing that can suspend on a project lookup. A tick landing in that gap
+  // recomputed elapsed out of the state being replaced, so the readout kept showing the previous
+  // entry's duration under the new entry's project name until the next tick corrected it.
+  //
+  // Asserted from inside the lookup rather than by racing a tick against it: what the fix
+  // guarantees is the write order, and a tick fired into that window cannot observe it
+  // reliably, because the following tick recomputes the right value and hides which order the
+  // writes happened in.
+  @Test
+  fun `the new state is computed before elapsed is written, so a tick cannot interleave`() =
+    runTest(testDispatcher) {
+      primeIdentity()
+      val startA = Instant.parse("2026-07-31T09:00:00Z")
+      var now = startA
+      server.enqueue(
+        MockResponse().setBody(runningEntryListJson("running", start = startA.toString()))
+      )
+      server.enqueue(MockResponse().setBody("[]")) // project-name lookup, unresolved here
+      val delegate = createClockifyApi(apiKey = { API_KEY }, baseUrl = server.url("/").toString())
+      // Records what the readout holds at the moment the new entry's project lookup is issued. The
+      // readout is read through a lambda because the view model is built around this api.
+      var elapsedAtLookup: Long? = null
+      var elapsedReadout: () -> Long = { error("not wired up yet") }
+      val api =
+        object : ClockifyApi by delegate {
+          override suspend fun getProjects(
+            workspaceId: String,
+            archived: Boolean?,
+            page: Int?,
+            pageSize: Int?,
+          ): List<ProjectDto> {
+            elapsedAtLookup = elapsedReadout()
+            return delegate.getProjects(workspaceId, archived, page, pageSize)
+          }
+        }
+      val viewModel =
+        TimerViewModel(
+          ClockifyRepository(
+            api,
+            settingsStore,
+            // Same injected clock as the rest of this test: without it the cache's staleness check
+            // reads the real wall clock and never expires.
+            ProjectCache(File(tempFolder.root, "projects.json")) { now },
+          ),
+          settingsStore,
+          clock = { now },
+        )
+      elapsedReadout = { viewModel.elapsedSeconds.value }
+      viewModel.onForeground().join()
+      assertEquals(0L, viewModel.elapsedSeconds.value)
+
+      // A reload whose project lookup has to reach the network for applyEntry to suspend at
+      // all: the clock is pushed past the cache's staleness threshold, so the cache the initial
+      // load wrote is not served. The entry it resolves started 1000 s before this reading,
+      // which is what makes its fresh elapsed value distinguishable from the 0 on screen.
+      now = startA.plus(Duration.ofHours(7))
+      val startB = now.minusSeconds(1000)
+      elapsedAtLookup = null
+      server.enqueue(
+        MockResponse().setBody(runningEntryListJson("running", start = startB.toString()))
+      )
+      server.enqueue(MockResponse().setBody("[]")) // this reload's project lookup
+      viewModel.onForeground().join()
+
+      assertEquals(1000L, viewModel.elapsedSeconds.value)
+      // The lookup observed the pre-reload readout, i.e. elapsed is written after the new state
+      // has been computed. Written any earlier, a tick landing in this gap would recompute
+      // elapsed out of the state being replaced, and the readout would keep the old entry's
+      // duration for up to a second.
+      assertEquals(0L, elapsedAtLookup)
     }
 
   @Test

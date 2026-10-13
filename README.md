@@ -13,12 +13,25 @@ phone.
 
 ## Screenshots
 
-|                 | Idle                                                  | Running                                                     |
-| --------------- | ------------------------------------------------------ | ------------------------------------------------------------ |
-| **Main screen** | ![Idle main screen](docs/screenshots/timer_idle.png) | ![Running main screen](docs/screenshots/timer_running.png) |
-| **Tile**        | ![Idle tile](docs/screenshots/tile_idle.png)         | ![Running tile](docs/screenshots/tile_running.png)          |
+| Idle                                                | Running                                                   | Signed out                                            |
+| --------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
+| ![Idle main screen](docs/screenshots/timer_idle.png) | ![Running main screen](docs/screenshots/timer_running.png) | ![Signed out](docs/screenshots/timer_signed_out.png)   |
 
-Project names and elapsed times shown above are placeholders.
+| Project picker                                         | Task picker                                      | Recents                                  |
+| ------------------------------------------------------ | ------------------------------------------------ | ---------------------------------------- |
+| ![Project picker](docs/screenshots/project_picker.png) | ![Task picker](docs/screenshots/task_picker.png) | ![Recents](docs/screenshots/recents.png) |
+
+| Summary                                  | Settings                                   |
+| ---------------------------------------- | ------------------------------------------ |
+| ![Summary](docs/screenshots/summary.png)  | ![Settings](docs/screenshots/settings.png) |
+
+| Tile, idle                                   | Tile, running                                    |
+| -------------------------------------------- | ------------------------------------------------ |
+| ![Idle tile](docs/screenshots/tile_idle.png) | ![Running tile](docs/screenshots/tile_running.png) |
+
+Project names and elapsed times shown above are placeholders. The idle and running main screen and
+the two tile images are captures from a watch. The rest are rendered from the app's own composables
+by `ScreenScreenshotsTest`, which `just screenshots` runs to refresh them.
 
 ## Requirements
 
