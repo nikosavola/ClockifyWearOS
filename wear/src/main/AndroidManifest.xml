@@ -5,6 +5,9 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Wear 7 Live Updates: a promoted ongoing notification is only eligible while the manifest
+         requests this. Declared, not runtime. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
 
     <application
         android:name=".ClockifyApp"
@@ -61,6 +64,12 @@
                 android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
                 android:value="300" />
         </service>
+
+        <!-- Not exported: the delete intent is delivered by the system on this app's behalf, so it
+             carries this app's own identity and never needs to be reachable from outside. -->
+        <receiver
+            android:name=".notification.LiveUpdateDismissedReceiver"
+            android:exported="false" />
 
     </application>
 
