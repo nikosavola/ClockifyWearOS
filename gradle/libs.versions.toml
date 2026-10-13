@@ -1,7 +1,7 @@
 [versions]
 agp = "9.4.0"
 kotlin = "2.4.0"
-wear-compose = "1.6.2"
+wear-compose = "1.7.1"
 wear-ongoing = "1.1.0"
 wear-tiles = "1.6.2"
 wear-protolayout = "1.4.2"
@@ -15,9 +15,9 @@ androidx-core-ktx = "1.17.0"
 androidx-fragment = "1.9.0"
 androidx-lifecycle-runtime-ktx = "2.9.3"
 androidx-activity-compose = "1.10.1"
-# Compose UI resolves to 1.9.0 on this classpath (via wear.compose 1.6.2 / lifecycle 2.9.3); pin
-# the UI test artifacts to match so they don't drag the graph to a different Compose version.
-compose-ui = "1.9.0"
+# Compose UI resolves to 1.10.0 on this classpath (via wear.compose 1.7.1); pin the UI test
+# artifacts to match so they don't drag the graph to a different Compose version.
+compose-ui = "1.10.0"
 junit = "4.13.2"
 # Retrofit 3.0.0 depends on okhttp 4.12.0 (stable); okhttp 5.x is still alpha-only on Maven
 # Central, so 4.12.0 is the newest mutually-stable pairing for the client and its test server.
